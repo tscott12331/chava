@@ -7,7 +7,7 @@ i is an integer
 comment ::= `//` (~newline)* newline
           | `/*` (~`*/`)* `*/`
 
-type ::= `Int` | `Boolean` | `Void` | Built-in types
+type ::= `int` | `bool` | `void` | Built-in types
          classname class type; includes Object and String
 
 comma_exp ::= [exp (`,` exp)*]

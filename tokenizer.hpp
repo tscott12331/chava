@@ -38,6 +38,8 @@ enum class TokenType {
     InitToken,
     MethodToken,
     NewToken,
+    ThisToken,
+    SuperToken,
 
     // syntax
     CommaToken,
@@ -51,6 +53,7 @@ enum class TokenType {
     RAngleToken,
     LBracketToken,
     RBracketToken,
+    DotToken,
 };
 
 struct Token {
@@ -62,7 +65,7 @@ struct Token {
 
 class Tokenizer {
 public:
-    Tokenizer(std::string_view input) : input(input) {};
+    Tokenizer(std::string_view input);
     std::vector<Token> tokenize();
     static std::vector<Token> Tokenize(std::string_view input);
 private:
@@ -73,10 +76,13 @@ private:
 
     void skip_whitespace();
     std::expected<std::optional<Token>, std::string> get_token();
+    std::expected<std::optional<Token>, std::string> get_num_keyword_or_identifier();
+    std::expected<std::optional<Token>, std::string> get_num();
     Token create_token(TokenType token_type, std::string_view raw);
     std::string err_unexpected_token(std::string_view raw);
     std::string format_error(std::string_view message);
 };
 
+std::string_view token_to_string(Token token);
 
 #endif
