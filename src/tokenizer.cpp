@@ -46,11 +46,11 @@ std::vector<Token> Tokenizer::Tokenize(std::string_view input) {
     return t.tokenize();
 }
 
-Tokenizer::Tokenizer(std::string_view input) : input(input), offset(0), line(1), col(1) {}
+Tokenizer::Tokenizer(std::string_view input) : input(input), cursor(0), line(1), col(1) {}
 
 std::vector<Token> Tokenizer::tokenize() {
     std::vector<Token> tokens;
-    while(offset < input.length()) {
+    while(cursor < input.length()) {
         skip_whitespace();
         auto token = get_token();
         if(token) {
@@ -68,8 +68,8 @@ std::vector<Token> Tokenizer::tokenize() {
 
 // returns (new_pos, newlines)
 void Tokenizer::skip_whitespace() {
-    while(offset < input.length()) {
-        auto sub = input.substr(offset);
+    while(cursor < input.length()) {
+        auto sub = input.substr(cursor);
         if(is_newline(sub)) {
             line += 1;
             col = 0;
@@ -77,17 +77,17 @@ void Tokenizer::skip_whitespace() {
             break;
         }
 
-        offset += 1;
+        cursor += 1;
         col += 1;
     }
 }
 
 std::expected<std::optional<Token>, std::string>  Tokenizer::get_token() {
-    if(offset >= input.length()) {
+    if(cursor >= input.length()) {
         return std::nullopt;
     }
 
-    auto sub = input.substr(offset);
+    auto sub = input.substr(cursor);
     switch(sub.at(0)) {
         // symbols
         case ',':
@@ -132,20 +132,20 @@ std::expected<std::optional<Token>, std::string>  Tokenizer::get_token() {
 }
 
 std::expected<std::optional<Token>, std::string> Tokenizer::get_num_keyword_or_identifier() {
-    if(is_num(input.at(offset))) {
+    if(is_num(input.at(cursor))) {
         return get_num();
     }
 
-    if(!isalpha(input.at(offset))) {
-        return std::unexpected(err_unexpected_token(input.substr(offset, 1)));
+    if(!isalpha(input.at(cursor))) {
+        return std::unexpected(err_unexpected_token(input.substr(cursor, 1)));
     }
 
-    auto index = offset;
+    auto index = cursor;
     while(index < input.length() && is_valid_keyword_or_ident_char(input.at(index))) {
         index += 1;
     }
 
-    auto word = input.substr(offset, index-offset);
+    auto word = input.substr(cursor, index-cursor);
     if(keyword_map.contains(word)) {
         auto token_type = keyword_map[word];
         return create_token(token_type, word);
@@ -155,23 +155,23 @@ std::expected<std::optional<Token>, std::string> Tokenizer::get_num_keyword_or_i
 }
 
 std::expected<std::optional<Token>, std::string> Tokenizer::get_num() {
-    if(!is_num(input.at(offset))) {
-        return std::unexpected(err_unexpected_token(input.substr(offset, 1)));
+    if(!is_num(input.at(cursor))) {
+        return std::unexpected(err_unexpected_token(input.substr(cursor, 1)));
     }
 
-    auto index = offset;
+    auto index = cursor;
     while(index < input.length() && is_num(input.at(index))) {
         index += 1;
     }
 
-    const auto raw_num = input.substr(offset, index-offset);
+    const auto raw_num = input.substr(cursor, index-cursor);
     return create_token(TokenType::NumberToken, raw_num);
 }
 
 Token Tokenizer::create_token(TokenType token_type, std::string_view raw) {
     auto wordLen = int(raw.length());
     col += wordLen;
-    offset += wordLen;
+    cursor += wordLen;
     return Token{
         .type = token_type,
         .raw = raw,

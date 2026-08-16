@@ -70,7 +70,7 @@ public:
     static std::vector<Token> Tokenize(std::string_view input);
 private:
     std::string_view input;
-    int offset;
+    int cursor;
     int line;
     int col;
 
