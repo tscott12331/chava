@@ -8,6 +8,7 @@
 #include <chava/tokenizer.hpp>
 #include <chava/class.hpp>
 #include <expected>
+#include <string_view>
 #include <vector>
 
 struct Program {
@@ -40,6 +41,9 @@ private:
     std::expected<std::unique_ptr<ReturnStmt>, std::string_view> parse_return_stmt();
     std::expected<std::unique_ptr<IfStmt>, std::string_view> parse_if_stmt();
     std::expected<std::unique_ptr<BlockStmt>, std::string_view> parse_block_stmt();
+
+    std::expected<VarExp, std::string_view> parse_var_exp();
+    std::expected<NumLitExp, std::string_view> parse_num_lit_exp();
 
     std::expected<Token, std::string_view> get_token_of(TokenType token_type);
     std::expected<Token, std::string_view> get_token();
