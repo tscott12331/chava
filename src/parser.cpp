@@ -54,6 +54,6 @@ std::expected<Token, std::string_view> Parser::get_token() {
     return tokens.at(cursor);
 }
 
-std::string unexpected_token(Token& token) {
+std::string Parser::unexpected_token(Token& token) {
     return std::format("[{}:{}]: unexpected token {}", token.pos.line, token.pos.col, token_to_string(token));
 }

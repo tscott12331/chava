@@ -55,13 +55,13 @@ struct ThisExp {};
 
 struct NewObjExp {
     std::string_view class_name;
-    CommaExp params;
+    CommaExp args;
 };
 
 struct MethodCallExp {
     Expr target;
     std::string_view method_name;
-    CommaExp params;
+    CommaExp args;
 };
 
 struct BinaryExp {
