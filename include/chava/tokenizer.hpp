@@ -31,6 +31,7 @@ enum class TokenType {
     FalseToken,
     IdentToken,
     NumberToken,
+    StringToken,
 
     // class
     ClassToken,
@@ -66,8 +67,8 @@ struct Token {
 class Tokenizer {
 public:
     Tokenizer(std::string_view input);
-    std::vector<Token> tokenize();
-    static std::vector<Token> Tokenize(std::string_view input);
+    std::expected<std::vector<Token>, std::string> tokenize();
+    static std::expected<std::vector<Token>, std::string> Tokenize(std::string_view input);
 private:
     std::string_view input;
     int cursor;
@@ -78,6 +79,7 @@ private:
     std::expected<std::optional<Token>, std::string> get_token();
     std::expected<std::optional<Token>, std::string> get_num_keyword_or_identifier();
     std::expected<std::optional<Token>, std::string> get_num();
+    std::expected<std::optional<Token>, std::string> get_string();
     Token create_token(TokenType token_type, std::string_view raw);
     std::string err_unexpected_token(std::string_view raw);
     std::string format_error(std::string_view message);

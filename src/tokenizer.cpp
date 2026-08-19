@@ -2,7 +2,6 @@
 #include <cctype>
 #include <expected>
 #include <format>
-#include <iostream>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -41,14 +40,14 @@ std::unordered_map<std::string_view, TokenType> keyword_map = {
     {"extends", TokenType::ExtendsToken},
 };
 
-std::vector<Token> Tokenizer::Tokenize(std::string_view input) {
+std::expected<std::vector<Token>, std::string> Tokenizer::Tokenize(std::string_view input) {
     Tokenizer t(input);
     return t.tokenize();
 }
 
 Tokenizer::Tokenizer(std::string_view input) : input(input), cursor(0), line(1), col(1) {}
 
-std::vector<Token> Tokenizer::tokenize() {
+std::expected<std::vector<Token>, std::string> Tokenizer::tokenize() {
     std::vector<Token> tokens;
     while(cursor < input.length()) {
         skip_whitespace();
@@ -58,8 +57,7 @@ std::vector<Token> Tokenizer::tokenize() {
                 tokens.push_back(token->value());
             }
         } else {
-            std::cout << token.error();
-            break;
+            return std::unexpected(token.error());
         }
     }
 
@@ -126,6 +124,8 @@ std::expected<std::optional<Token>, std::string>  Tokenizer::get_token() {
             return create_token(TokenType::FSlashToken, "/");
         case '*':
             return create_token(TokenType::StarToken, "*");
+        case '"':
+            return get_string();
         default:
             return get_num_keyword_or_identifier();
     }
@@ -166,6 +166,30 @@ std::expected<std::optional<Token>, std::string> Tokenizer::get_num() {
 
     const auto raw_num = input.substr(cursor, index-cursor);
     return create_token(TokenType::NumberToken, raw_num);
+}
+
+std::expected<std::optional<Token>, std::string> Tokenizer::get_string() {
+    if(cursor >= input.size()) {
+        return std::nullopt;
+    }
+
+    if(input.at(cursor) != '"') {
+        return std::unexpected(err_unexpected_token(input.substr(cursor, 1)));
+    }
+    auto str_start = cursor;
+    auto str_end = str_start+1;
+
+    while(str_end < input.size() && input.at(str_end) != '"') {
+        str_end += 1;
+    }
+
+    if(str_end == input.size()) {
+        return std::unexpected(format_error("Unclosed string"));
+    }
+
+    str_end += 1;
+
+    return create_token(TokenType::StringToken, input.substr(str_start, str_end-str_start));
 }
 
 Token Tokenizer::create_token(TokenType token_type, std::string_view raw) {
@@ -247,6 +271,10 @@ std::string_view token_to_string(Token token) {
         case TokenType::IdentToken:
         case TokenType::NumberToken:
             return token.raw;
+        case TokenType::StringToken: {
+            auto formatted = new std::string(std::format("\"{}\"", token.raw));
+            return *formatted;
+        }
 
         // case TokenType::class:
         case TokenType::ClassToken:
