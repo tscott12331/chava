@@ -16,7 +16,7 @@ struct MethodDef {
     std::string_view method_name;
     CommaVardec params;
     Type ret_type;
-    BlockStmt body;
+    std::unique_ptr<BlockStmt> body;
 };
 
 struct Constructor {

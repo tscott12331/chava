@@ -1,7 +1,7 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
-#include "chava/parser_misc.hpp"
+#include <chava/parser_misc.hpp>
 #include <chava/type.hpp>
 #include <chava/exp.hpp>
 #include <chava/stmt.hpp>
@@ -59,6 +59,10 @@ private:
     std::expected<BoolLitExp, std::string_view> parse_bool_lit_exp();
     // TODO: add println support (need to decide if i want token or just general function parsing)
     std::expected<std::unique_ptr<NewObjExp>, std::string_view> parse_new_obj_exp();
+
+    std::expected<MethodDef, std::string_view> parse_method_def();
+    std::expected<Constructor, std::string_view> parse_constructor();
+    std::expected<ClassDef, std::string_view> parse_classdef();
 
     std::expected<Token, std::string_view> get_token_of(TokenType token_type);
     std::expected<Token, std::string_view> get_token();

@@ -1,5 +1,4 @@
 #include <chava/parser.hpp>
-#include <chava/type.hpp>
 #include <expected>
 #include <format>
 #include <string_view>
@@ -54,33 +53,5 @@ std::expected<Vardec, std::string_view> Parser::parse_vardec() {
     return Vardec{
         .type=type.value(),
         .var=var_token->raw,
-    };
-}
-
-std::expected<CommaVardec, std::string_view> Parser::parse_comma_vardec() {
-    std::vector<Vardec> vardecs;
-
-    auto vardec = parse_vardec();
-    if(!vardec) {
-        return CommaVardec{
-            .vardecs=std::move(vardecs),
-        };
-    }
-
-    auto token = get_token_of(TokenType::CommaToken);
-    while(token) {
-        cursor += 1;
-
-        vardec = parse_vardec();
-        if(!vardec) {
-            return std::unexpected(vardec.error());
-        }
-        vardecs.push_back(std::move(vardec.value()));
-
-        token = get_token_of(TokenType::CommaToken);
-    }
-
-    return CommaVardec{
-        .vardecs=std::move(vardecs),
     };
 }

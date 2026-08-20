@@ -14,13 +14,14 @@ std::expected<Program, std::string_view> Parser::Parse(std::vector<Token> tokens
 }
 
 std::expected<Program, std::string_view> Parser::parse() {
-    auto stmts_res = parse_stmts();
-    if(!stmts_res) {
-        return std::unexpected(stmts_res.error());
-    }
     auto classdefs_res = parse_classdefs();
     if(!classdefs_res) {
         return std::unexpected(classdefs_res.error());
+    }
+
+    auto stmts_res = parse_stmts();
+    if(!stmts_res) {
+        return std::unexpected(stmts_res.error());
     }
 
     return Program{
