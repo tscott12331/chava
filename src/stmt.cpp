@@ -1,7 +1,6 @@
-#include "chava/parser.hpp"
+#include <chava/parser.hpp>
 #include <chava/stmt.hpp>
 #include <expected>
-#include <format>
 
 std::expected<Stmt, std::string_view> Parser::parse_stmt() {
     if(cursor >= tokens.size()) {
@@ -26,38 +25,25 @@ std::expected<Stmt, std::string_view> Parser::parse_stmt() {
             return parse_if_stmt();
         case TokenType::LBracketToken:
             return parse_block_stmt();
-            
+        default:
+            return std::unexpected(unexpected_token(token));
     }
 }
 
 std::expected<VardecStmt, std::string_view> Parser::parse_vardec_stmt() {
-    auto type_token = get_token();
-    if(!type_token) {
-        return std::unexpected(type_token.error());
+    auto vardec = parse_vardec();
+    if(!vardec) {
+        return std::unexpected(vardec.error());
     }
 
-    Type type;
-    switch(type_token->type) {
-        case TokenType::IntToken:
-            type = PrimitiveType::Int;
-        case TokenType::BoolToken:
-            type = PrimitiveType::Bool;
-        case TokenType::VoidToken:
-            return std::unexpected("Can't create a variable with type void");
-        default:
-            return std::unexpected(std::format("Can't use {} as vardec type", token_to_string(*type_token)));
+    auto token = get_token_of(TokenType::SemiColonToken);
+    if(!token) {
+        return std::unexpected(token.error());
     }
-
-    auto var_token = get_token_of(TokenType::IdentToken);
-    if(!var_token) {
-        return std::unexpected(var_token.error());
-    }
+    cursor += 1;
 
     return VardecStmt{
-        .vardec=Vardec{
-            .type=type,
-            .var=var_token->raw
-        }
+        .vardec=std::move(vardec.value()),
     };
 }
 
