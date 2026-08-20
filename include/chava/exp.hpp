@@ -17,7 +17,13 @@ enum class Op {
     Add,
     Sub,
     Mult,
-    Div
+    Div,
+
+    Eq,
+    NotEq,
+
+    Lt,
+    Gt,
 };
 
 using Expr = std::variant<

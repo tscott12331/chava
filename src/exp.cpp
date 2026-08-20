@@ -17,24 +17,188 @@ std::expected<Expr, std::string_view> Parser::parse_exp() {
 }
 
 std::expected<Expr, std::string_view> Parser::parse_eq_exp() {
-    return std::unexpected("not implemented");
+    auto left = parse_comp_exp();
+    if(!left) {
+        return std::unexpected(left.error());
+    }
+
+    auto token = get_token();
+    if(!token) {
+        return std::move(left.value());
+    }
+
+    Op op;
+    switch(token->type) {
+        case TokenType::NotEqualToken:
+            op = Op::NotEq;
+            break;
+        case TokenType::EqualToken:
+            op = Op::Eq;
+            break;
+        default:
+            return std::move(left.value());
+    }
+    cursor += 1;
+
+    auto right = parse_comp_exp();
+    if(!right) {
+        return std::unexpected(right.error());
+    }
+
+    return std::make_unique<BinaryExp>(BinaryExp{
+        .left=std::move(left.value()),
+        .op=op,
+        .right=std::move(right.value()),
+    });
 }
 
 std::expected<Expr, std::string_view> Parser::parse_comp_exp() {
+    auto left = parse_add_exp();
+    if(!left) {
+        return std::unexpected(left.error());
+    }
 
-    return std::unexpected("not implemented");
+    auto token = get_token();
+    if(!token) {
+        return std::move(left.value());
+    }
+    Op op;
+    switch(token->type) {
+        case TokenType::LAngleToken:
+            op = Op::Lt;
+            break;
+        case TokenType::RAngleToken:
+            op = Op::Gt;
+            break;
+        default:
+            return std::move(left.value());
+    }
+    cursor += 1;
+
+    auto right = parse_add_exp();
+    if(!right) {
+        return std::unexpected(right.error());
+    }
+
+    return std::make_unique<BinaryExp>(BinaryExp{
+        .left=std::move(left.value()),
+        .op=op,
+        .right=std::move(right.value()),
+    });
 }
 
 std::expected<Expr, std::string_view> Parser::parse_add_exp() {
-    return std::unexpected("not implemented");
+    auto left = parse_mult_exp();
+    if(!left) {
+        return std::unexpected(left.error());
+    }
+
+    auto token = get_token();
+    if(!token) {
+        return std::move(left.value());
+    }
+
+    Op op;
+    switch(token->type) {
+        case TokenType::PlusToken:
+            op = Op::Add;
+            break;
+        case TokenType::DashToken:
+            op = Op::Sub;
+            break;
+        default:
+            return std::move(left.value());
+    }
+    cursor += 1;
+
+    auto right = parse_mult_exp();
+    if(!right) {
+        return std::unexpected(right.error());
+    }
+
+    return std::make_unique<BinaryExp>(BinaryExp{
+        .left=std::move(left.value()),
+        .op=op,
+        .right=std::move(right.value()),
+    });
 }
 
 std::expected<Expr, std::string_view> Parser::parse_mult_exp() {
-    return std::unexpected("not implemented");
+    auto left = parse_call_exp();
+    if(!left) {
+        return std::unexpected(left.error());
+    }
+
+    auto token = get_token();
+    if(!token) {
+        return std::move(left.value());
+    }
+
+    Op op;
+    switch(token->type) {
+        case TokenType::StarToken:
+            op = Op::Mult;
+            break;
+        case TokenType::FSlashToken:
+            op = Op::Div;
+            break;
+        default:
+            return std::move(left.value());
+    }
+    cursor += 1;
+
+    auto right = parse_call_exp();
+    if(!right) {
+        return std::unexpected(right.error());
+    }
+
+    return std::make_unique<BinaryExp>(BinaryExp{
+        .left=std::move(left.value()),
+        .op=op,
+        .right=std::move(right.value()),
+    });
 }
 
 std::expected<Expr, std::string_view> Parser::parse_call_exp() {
-    return std::unexpected("not implemented");
+    auto target = parse_prim_exp();
+    if(!target) {
+        return std::unexpected(target.error());
+    }
+
+    auto token = get_token_of(TokenType::DotToken);
+
+    while(token) {
+        cursor += 1;
+        auto method_name = get_token_of(TokenType::IdentToken);
+        if(!method_name) {
+            return std::unexpected(method_name.error());
+        }
+        cursor += 1;
+
+        token = get_token_of(TokenType::LParenToken);
+        if(!token) {
+            return std::unexpected(token.error());
+        }
+        cursor += 1;
+
+        auto args = parse_comma_exp();
+        if(!args) {
+            return std::unexpected(args.error());
+        }
+
+        token = get_token_of(TokenType::RParenToken);
+        cursor += 1;
+
+        target = std::make_unique<MethodCallExp>(MethodCallExp{
+            .target=std::move(target.value()),
+            .method_name=method_name->raw,
+            .args=std::move(args.value()),
+        });
+
+        token = get_token_of(TokenType::DotToken);
+    }
+
+    return std::move(target.value());
 }
 
 std::expected<Expr, std::string_view> Parser::parse_prim_exp() {
@@ -58,8 +222,9 @@ std::expected<Expr, std::string_view> Parser::parse_prim_exp() {
             return parse_bool_lit_exp();
         case TokenType::NewToken:
             return parse_new_obj_exp();
+        default:
+            return std::unexpected(unexpected_token(token.value()));
     }
-
 }
 
 std::expected<VarExp, std::string_view> Parser::parse_var_exp() {
