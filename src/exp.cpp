@@ -23,33 +23,35 @@ std::expected<Expr, std::string_view> Parser::parse_eq_exp() {
     }
 
     auto token = get_token();
-    if(!token) {
-        return std::move(left.value());
+    while(token) {
+        Op op;
+        switch(token->type) {
+            case TokenType::NotEqualToken:
+                op = Op::NotEq;
+                break;
+            case TokenType::EqualToken:
+                op = Op::Eq;
+                break;
+            default:
+                return std::move(left.value());
+        }
+        cursor += 1;
+
+        auto right = parse_comp_exp();
+        if(!right) {
+            return std::unexpected(right.error());
+        }
+
+        left = std::make_unique<BinaryExp>(BinaryExp{
+            .left=std::move(left.value()),
+            .op=op,
+            .right=std::move(right.value()),
+        });
+
+        token = get_token();
     }
 
-    Op op;
-    switch(token->type) {
-        case TokenType::NotEqualToken:
-            op = Op::NotEq;
-            break;
-        case TokenType::EqualToken:
-            op = Op::Eq;
-            break;
-        default:
-            return std::move(left.value());
-    }
-    cursor += 1;
-
-    auto right = parse_comp_exp();
-    if(!right) {
-        return std::unexpected(right.error());
-    }
-
-    return std::make_unique<BinaryExp>(BinaryExp{
-        .left=std::move(left.value()),
-        .op=op,
-        .right=std::move(right.value()),
-    });
+    return std::move(left.value());
 }
 
 std::expected<Expr, std::string_view> Parser::parse_comp_exp() {
@@ -94,33 +96,35 @@ std::expected<Expr, std::string_view> Parser::parse_add_exp() {
     }
 
     auto token = get_token();
-    if(!token) {
-        return std::move(left.value());
+    while(token) {
+        Op op;
+        switch(token->type) {
+            case TokenType::PlusToken:
+                op = Op::Add;
+                break;
+            case TokenType::DashToken:
+                op = Op::Sub;
+                break;
+            default:
+                return std::move(left.value());
+        }
+        cursor += 1;
+
+        auto right = parse_mult_exp();
+        if(!right) {
+            return std::unexpected(right.error());
+        }
+
+        left = std::make_unique<BinaryExp>(BinaryExp{
+            .left=std::move(left.value()),
+            .op=op,
+            .right=std::move(right.value()),
+        });
+
+        token = get_token();
     }
 
-    Op op;
-    switch(token->type) {
-        case TokenType::PlusToken:
-            op = Op::Add;
-            break;
-        case TokenType::DashToken:
-            op = Op::Sub;
-            break;
-        default:
-            return std::move(left.value());
-    }
-    cursor += 1;
-
-    auto right = parse_mult_exp();
-    if(!right) {
-        return std::unexpected(right.error());
-    }
-
-    return std::make_unique<BinaryExp>(BinaryExp{
-        .left=std::move(left.value()),
-        .op=op,
-        .right=std::move(right.value()),
-    });
+    return std::move(left.value());
 }
 
 std::expected<Expr, std::string_view> Parser::parse_mult_exp() {
@@ -130,33 +134,35 @@ std::expected<Expr, std::string_view> Parser::parse_mult_exp() {
     }
 
     auto token = get_token();
-    if(!token) {
-        return std::move(left.value());
+    while(token) {
+        Op op;
+        switch(token->type) {
+            case TokenType::StarToken:
+                op = Op::Mult;
+                break;
+            case TokenType::FSlashToken:
+                op = Op::Div;
+                break;
+            default:
+                return std::move(left.value());
+        }
+        cursor += 1;
+
+        auto right = parse_call_exp();
+        if(!right) {
+            return std::unexpected(right.error());
+        }
+
+        left = std::make_unique<BinaryExp>(BinaryExp{
+            .left=std::move(left.value()),
+            .op=op,
+            .right=std::move(right.value()),
+        });
+
+        token = get_token();
     }
 
-    Op op;
-    switch(token->type) {
-        case TokenType::StarToken:
-            op = Op::Mult;
-            break;
-        case TokenType::FSlashToken:
-            op = Op::Div;
-            break;
-        default:
-            return std::move(left.value());
-    }
-    cursor += 1;
-
-    auto right = parse_call_exp();
-    if(!right) {
-        return std::unexpected(right.error());
-    }
-
-    return std::make_unique<BinaryExp>(BinaryExp{
-        .left=std::move(left.value()),
-        .op=op,
-        .right=std::move(right.value()),
-    });
+    return std::move(left.value());
 }
 
 std::expected<Expr, std::string_view> Parser::parse_call_exp() {
