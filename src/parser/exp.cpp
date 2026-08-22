@@ -196,11 +196,11 @@ std::expected<Expr, std::string> Parser::parse_call_exp() {
         token = get_token_of(TokenType::RParenToken);
         cursor += 1;
 
-        target = std::make_unique<MethodCallExp>(MethodCallExp{
-            .target=std::move(target.value()),
-            .method_name=method_name->raw,
-            .args=std::move(args.value()),
-        });
+        target = std::make_unique<MethodCallExp>(MethodCallExp(
+            target.value(),
+            method_name->raw,
+            args.value()
+        ));
 
         token = get_token_of(TokenType::DotToken);
     }
@@ -225,7 +225,8 @@ std::expected<Expr, std::string> Parser::parse_prim_exp() {
             return parse_paren_exp();
         case TokenType::ThisToken:
             return parse_this_exp();
-        case TokenType::BoolToken:
+        case TokenType::TrueToken:
+        case TokenType::FalseToken:
             return parse_bool_lit_exp();
         case TokenType::NewToken:
             return parse_new_obj_exp();
@@ -322,6 +323,7 @@ std::expected<BoolLitExp, std::string> Parser::parse_bool_lit_exp() {
         default:
             return std::unexpected(unexpected_token(token.value()));
     }
+    cursor += 1;
 
     return BoolLitExp{
         .val=val,
@@ -338,6 +340,8 @@ std::expected<CommaExp, std::string> Parser::parse_comma_exp() {
             .exps=std::move(exps),
         };
     }
+
+    exps.push_back(std::move(exp.value()));
 
     auto token = get_token_of(TokenType::CommaToken);
     while(token) {
@@ -392,4 +396,9 @@ std::expected<std::unique_ptr<NewObjExp>, std::string> Parser::parse_new_obj_exp
         .class_name=class_name,
         .args=std::move(args.value()),
     });
+}
+
+
+void MethodCallExp::annotate_ret_type(Type ret_type) {
+    this->ret_type = ret_type;
 }

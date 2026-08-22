@@ -2,6 +2,8 @@
 #define EXP_HPP
 
 #include <memory>
+#include <chava/type.hpp>
+#include <optional>
 #include <variant>
 #include <vector>
 struct VarExp;
@@ -43,6 +45,8 @@ struct CommaExp {
 
 struct VarExp {
     std::string_view var;
+
+
 };
 
 struct StrLitExp {
@@ -64,16 +68,25 @@ struct NewObjExp {
     CommaExp args;
 };
 
-struct MethodCallExp {
-    Expr target;
-    std::string_view method_name;
-    CommaExp args;
-};
-
 struct BinaryExp {
     Expr left;
     Op op;
     Expr right;
 };
+
+struct MethodCallExp {
+    Expr target;
+    std::string_view method_name;
+    CommaExp args;
+
+    MethodCallExp(Expr& target, std::string_view method_name, CommaExp& args) : 
+                    target(std::move(target)), method_name(method_name), args(std::move(args)) {}
+    // annotation
+    void annotate_ret_type(Type ret_type);
+
+private:
+    std::optional<Type> ret_type = std::nullopt;
+};
+
 
 #endif
