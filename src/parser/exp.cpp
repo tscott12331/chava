@@ -225,7 +225,8 @@ std::expected<Expr, std::string> Parser::parse_prim_exp() {
             return parse_paren_exp();
         case TokenType::ThisToken:
             return parse_this_exp();
-        case TokenType::BoolToken:
+        case TokenType::TrueToken:
+        case TokenType::FalseToken:
             return parse_bool_lit_exp();
         case TokenType::NewToken:
             return parse_new_obj_exp();
@@ -322,6 +323,7 @@ std::expected<BoolLitExp, std::string> Parser::parse_bool_lit_exp() {
         default:
             return std::unexpected(unexpected_token(token.value()));
     }
+    cursor += 1;
 
     return BoolLitExp{
         .val=val,
@@ -338,6 +340,8 @@ std::expected<CommaExp, std::string> Parser::parse_comma_exp() {
             .exps=std::move(exps),
         };
     }
+
+    exps.push_back(std::move(exp.value()));
 
     auto token = get_token_of(TokenType::CommaToken);
     while(token) {

@@ -19,6 +19,9 @@ while(x - 2 > 5 * 2 * 6 - (5+2) - 5 == x + 5 < 7) {
 }
 a.something(51);
 b.something_else("hahaaha", 5+2);
+
+Car car;
+car = new Car("woah there", true);
 )";
     int line_num = 1;
     for(const auto line : std::views::split(input, '\n')) {
