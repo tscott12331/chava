@@ -196,11 +196,11 @@ std::expected<Expr, std::string> Parser::parse_call_exp() {
         token = get_token_of(TokenType::RParenToken);
         cursor += 1;
 
-        target = std::make_unique<MethodCallExp>(MethodCallExp{
-            .target=std::move(target.value()),
-            .method_name=method_name->raw,
-            .args=std::move(args.value()),
-        });
+        target = std::make_unique<MethodCallExp>(MethodCallExp(
+            target.value(),
+            method_name->raw,
+            args.value()
+        ));
 
         token = get_token_of(TokenType::DotToken);
     }
@@ -392,4 +392,9 @@ std::expected<std::unique_ptr<NewObjExp>, std::string> Parser::parse_new_obj_exp
         .class_name=class_name,
         .args=std::move(args.value()),
     });
+}
+
+
+void MethodCallExp::annotate_ret_type(Type ret_type) {
+    this->ret_type = ret_type;
 }

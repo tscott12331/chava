@@ -25,9 +25,11 @@ std::expected<Stmt, std::string> Parser::parse_stmt() {
             auto next = tokens.at(cursor+1);
             if(next.type == TokenType::AssignToken) {
                 return parse_assign_stmt();
+            } else if(next.type == TokenType::IdentToken) {
+                return parse_vardec_stmt();
+            } else {
+                return parse_exp_stmt();
             }
-
-            return parse_vardec_stmt();
         }
         case TokenType::WhileToken:
             return parse_while_stmt();
@@ -38,7 +40,7 @@ std::expected<Stmt, std::string> Parser::parse_stmt() {
         case TokenType::LBracketToken:
             return parse_block_stmt();
         default:
-            return std::unexpected(unexpected_token(token));
+            return parse_exp_stmt();
     }
 }
 
@@ -86,6 +88,23 @@ std::expected<VardecStmt, std::string> Parser::parse_vardec_stmt() {
 
     return VardecStmt{
         .vardec=std::move(vardec.value()),
+    };
+}
+
+std::expected<ExpStmt, std::string> Parser::parse_exp_stmt() {
+    auto exp = parse_exp();
+    if(!exp) {
+        return std::unexpected(exp.error());
+    }
+
+    auto token = get_token_of(TokenType::SemiColonToken);
+    if(!token) {
+        return std::unexpected(token.error());
+    }
+    cursor += 1;
+
+    return ExpStmt{
+        .exp=std::move(exp.value()),
     };
 }
 

@@ -46,6 +46,7 @@ private:
 
     std::expected<AssignStmt, std::string> parse_assign_stmt();
     std::expected<VardecStmt, std::string> parse_vardec_stmt();
+    std::expected<ExpStmt, std::string> parse_exp_stmt();
     std::expected<std::unique_ptr<WhileStmt>, std::string> parse_while_stmt();
     std::expected<std::unique_ptr<ReturnStmt>, std::string> parse_return_stmt();
     std::expected<std::unique_ptr<IfStmt>, std::string> parse_if_stmt();

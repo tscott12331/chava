@@ -1,9 +1,12 @@
+#include <format>
 #include <iostream>
 #include <chava/tokenizer.hpp>
 #include <chava/parser.hpp>
+#include <ranges>
+#include <string_view>
 
 int main() {
-    auto input = R"(
+    std::string input = R"(
 string y;
 y = "balesh";
 int x;
@@ -14,8 +17,15 @@ while(x - 2 > 5 * 2 * 6 - (5+2) - 5 == x + 5 < 7) {
     } else {
     }
 }
+a.something(51);
+b.something_else("hahaaha", 5+2);
 )";
-    std::cout << input << "\n";
+    int line_num = 1;
+    for(const auto line : std::views::split(input, '\n')) {
+        std::cout << std::format("{:>3}| {}\n", line_num, std::string_view(line.data(), line.size()));
+        line_num += 1;
+    }
+
     auto tokens = Tokenizer::Tokenize(input);
     if(!tokens) {
         std::cout << tokens.error() << "\n";
