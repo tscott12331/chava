@@ -1,8 +1,7 @@
-#include "tokenizer.hpp"
+#include <chava/tokenizer.hpp>
 #include <cctype>
 #include <expected>
 #include <format>
-#include <iostream>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -41,16 +40,16 @@ std::unordered_map<std::string_view, TokenType> keyword_map = {
     {"extends", TokenType::ExtendsToken},
 };
 
-std::vector<Token> Tokenizer::Tokenize(std::string_view input) {
+std::expected<std::vector<Token>, std::string> Tokenizer::Tokenize(std::string_view input) {
     Tokenizer t(input);
     return t.tokenize();
 }
 
-Tokenizer::Tokenizer(std::string_view input) : input(input), offset(0), line(1), col(1) {}
+Tokenizer::Tokenizer(std::string_view input) : input(input), cursor(0), line(1), col(1) {}
 
-std::vector<Token> Tokenizer::tokenize() {
+std::expected<std::vector<Token>, std::string> Tokenizer::tokenize() {
     std::vector<Token> tokens;
-    while(offset < input.length()) {
+    while(cursor < input.length()) {
         skip_whitespace();
         auto token = get_token();
         if(token) {
@@ -58,8 +57,7 @@ std::vector<Token> Tokenizer::tokenize() {
                 tokens.push_back(token->value());
             }
         } else {
-            std::cout << token.error();
-            break;
+            return std::unexpected(token.error());
         }
     }
 
@@ -68,8 +66,8 @@ std::vector<Token> Tokenizer::tokenize() {
 
 // returns (new_pos, newlines)
 void Tokenizer::skip_whitespace() {
-    while(offset < input.length()) {
-        auto sub = input.substr(offset);
+    while(cursor < input.length()) {
+        auto sub = input.substr(cursor);
         if(is_newline(sub)) {
             line += 1;
             col = 0;
@@ -77,17 +75,17 @@ void Tokenizer::skip_whitespace() {
             break;
         }
 
-        offset += 1;
+        cursor += 1;
         col += 1;
     }
 }
 
 std::expected<std::optional<Token>, std::string>  Tokenizer::get_token() {
-    if(offset >= input.length()) {
+    if(cursor >= input.length()) {
         return std::nullopt;
     }
 
-    auto sub = input.substr(offset);
+    auto sub = input.substr(cursor);
     switch(sub.at(0)) {
         // symbols
         case ',':
@@ -126,26 +124,28 @@ std::expected<std::optional<Token>, std::string>  Tokenizer::get_token() {
             return create_token(TokenType::FSlashToken, "/");
         case '*':
             return create_token(TokenType::StarToken, "*");
+        case '"':
+            return get_string();
         default:
             return get_num_keyword_or_identifier();
     }
 }
 
 std::expected<std::optional<Token>, std::string> Tokenizer::get_num_keyword_or_identifier() {
-    if(is_num(input.at(offset))) {
+    if(is_num(input.at(cursor))) {
         return get_num();
     }
 
-    if(!isalpha(input.at(offset))) {
-        return std::unexpected(err_unexpected_token(input.substr(offset, 1)));
+    if(!isalpha(input.at(cursor))) {
+        return std::unexpected(err_unexpected_token(input.substr(cursor, 1)));
     }
 
-    auto index = offset;
+    auto index = cursor;
     while(index < input.length() && is_valid_keyword_or_ident_char(input.at(index))) {
         index += 1;
     }
 
-    auto word = input.substr(offset, index-offset);
+    auto word = input.substr(cursor, index-cursor);
     if(keyword_map.contains(word)) {
         auto token_type = keyword_map[word];
         return create_token(token_type, word);
@@ -155,23 +155,47 @@ std::expected<std::optional<Token>, std::string> Tokenizer::get_num_keyword_or_i
 }
 
 std::expected<std::optional<Token>, std::string> Tokenizer::get_num() {
-    if(!is_num(input.at(offset))) {
-        return std::unexpected(err_unexpected_token(input.substr(offset, 1)));
+    if(!is_num(input.at(cursor))) {
+        return std::unexpected(err_unexpected_token(input.substr(cursor, 1)));
     }
 
-    auto index = offset;
+    auto index = cursor;
     while(index < input.length() && is_num(input.at(index))) {
         index += 1;
     }
 
-    const auto raw_num = input.substr(offset, index-offset);
+    const auto raw_num = input.substr(cursor, index-cursor);
     return create_token(TokenType::NumberToken, raw_num);
+}
+
+std::expected<std::optional<Token>, std::string> Tokenizer::get_string() {
+    if(cursor >= input.size()) {
+        return std::nullopt;
+    }
+
+    if(input.at(cursor) != '"') {
+        return std::unexpected(err_unexpected_token(input.substr(cursor, 1)));
+    }
+    auto str_start = cursor;
+    auto str_end = str_start+1;
+
+    while(str_end < input.size() && input.at(str_end) != '"') {
+        str_end += 1;
+    }
+
+    if(str_end == input.size()) {
+        return std::unexpected(format_error("Unclosed string"));
+    }
+
+    str_end += 1;
+
+    return create_token(TokenType::StringToken, input.substr(str_start, str_end-str_start));
 }
 
 Token Tokenizer::create_token(TokenType token_type, std::string_view raw) {
     auto wordLen = int(raw.length());
     col += wordLen;
-    offset += wordLen;
+    cursor += wordLen;
     return Token{
         .type = token_type,
         .raw = raw,
@@ -247,6 +271,10 @@ std::string_view token_to_string(Token token) {
         case TokenType::IdentToken:
         case TokenType::NumberToken:
             return token.raw;
+        case TokenType::StringToken: {
+            auto formatted = new std::string(std::format("\"{}\"", token.raw));
+            return *formatted;
+        }
 
         // case TokenType::class:
         case TokenType::ClassToken:
