@@ -2,7 +2,7 @@
 #include <chava/stmt.hpp>
 #include <expected>
 
-std::expected<Stmt, std::string_view> Parser::parse_stmt() {
+std::expected<Stmt, std::string> Parser::parse_stmt() {
     if(cursor >= tokens.size()) {
         return std::unexpected("Empty statement");
     }
@@ -17,6 +17,18 @@ std::expected<Stmt, std::string_view> Parser::parse_stmt() {
         case TokenType::BoolToken:
         case TokenType::VoidToken:
             return parse_vardec_stmt();
+        case TokenType::IdentToken: {
+            if(cursor + 1 >= tokens.size()) {
+                return std::unexpected(unexpected_token(token));
+            }
+
+            auto next = tokens.at(cursor+1);
+            if(next.type == TokenType::AssignToken) {
+                return parse_assign_stmt();
+            }
+
+            return parse_vardec_stmt();
+        }
         case TokenType::WhileToken:
             return parse_while_stmt();
         case TokenType::ReturnToken:
@@ -30,7 +42,37 @@ std::expected<Stmt, std::string_view> Parser::parse_stmt() {
     }
 }
 
-std::expected<VardecStmt, std::string_view> Parser::parse_vardec_stmt() {
+std::expected<AssignStmt, std::string> Parser::parse_assign_stmt() {
+    auto var_token = get_token_of(TokenType::IdentToken);
+    if(!var_token) {
+        return std::unexpected(var_token.error());
+    }
+    cursor += 1;
+
+    auto token = get_token_of(TokenType::AssignToken);
+    if(!token) {
+        return std::unexpected(token.error());
+    }
+    cursor += 1;
+
+    auto val = parse_exp();
+    if(!val) {
+        return std::unexpected(val.error());
+    }
+
+    token = get_token_of(TokenType::SemiColonToken);
+    if(!token) {
+        return std::unexpected(token.error());
+    }
+    cursor += 1;
+
+    return AssignStmt{
+        .var=var_token->raw,
+        .val=std::move(val.value()),
+    };
+}
+
+std::expected<VardecStmt, std::string> Parser::parse_vardec_stmt() {
     auto vardec = parse_vardec();
     if(!vardec) {
         return std::unexpected(vardec.error());
@@ -47,7 +89,7 @@ std::expected<VardecStmt, std::string_view> Parser::parse_vardec_stmt() {
     };
 }
 
-std::expected<std::unique_ptr<ReturnStmt>, std::string_view> Parser::parse_return_stmt() {
+std::expected<std::unique_ptr<ReturnStmt>, std::string> Parser::parse_return_stmt() {
     auto token = get_token_of(TokenType::ReturnToken);
     if(!token) {
         return std::unexpected(token.error());
@@ -81,7 +123,7 @@ std::expected<std::unique_ptr<ReturnStmt>, std::string_view> Parser::parse_retur
     });
 }
 
-std::expected<std::unique_ptr<WhileStmt>, std::string_view> Parser::parse_while_stmt() {
+std::expected<std::unique_ptr<WhileStmt>, std::string> Parser::parse_while_stmt() {
     auto token = get_token_of(TokenType::WhileToken);
     if(!token) {
         return std::unexpected(token.error());
@@ -113,7 +155,7 @@ std::expected<std::unique_ptr<WhileStmt>, std::string_view> Parser::parse_while_
     });
 }
 
-std::expected<std::unique_ptr<IfStmt>, std::string_view> Parser::parse_if_stmt() {
+std::expected<std::unique_ptr<IfStmt>, std::string> Parser::parse_if_stmt() {
     auto token = get_token_of(TokenType::IfToken);
     if(!token) {
         return std::unexpected(token.error());
@@ -161,7 +203,7 @@ std::expected<std::unique_ptr<IfStmt>, std::string_view> Parser::parse_if_stmt()
     });
 }
 
-std::expected<std::unique_ptr<BlockStmt>, std::string_view> Parser::parse_block_stmt() {
+std::expected<std::unique_ptr<BlockStmt>, std::string> Parser::parse_block_stmt() {
     auto token = get_token_of(TokenType::LBracketToken);
     if(!token) {
         return std::unexpected(token.error());

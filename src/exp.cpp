@@ -7,7 +7,8 @@
 #include <memory>
 #include <string_view>
 #include <system_error>
-std::expected<Expr, std::string_view> Parser::parse_exp() {
+
+std::expected<Expr, std::string> Parser::parse_exp() {
     auto token = get_token();
     if(!token) {
         return std::unexpected(token.error());
@@ -16,7 +17,7 @@ std::expected<Expr, std::string_view> Parser::parse_exp() {
     return parse_eq_exp();
 }
 
-std::expected<Expr, std::string_view> Parser::parse_eq_exp() {
+std::expected<Expr, std::string> Parser::parse_eq_exp() {
     auto left = parse_comp_exp();
     if(!left) {
         return std::unexpected(left.error());
@@ -54,7 +55,7 @@ std::expected<Expr, std::string_view> Parser::parse_eq_exp() {
     return std::move(left.value());
 }
 
-std::expected<Expr, std::string_view> Parser::parse_comp_exp() {
+std::expected<Expr, std::string> Parser::parse_comp_exp() {
     auto left = parse_add_exp();
     if(!left) {
         return std::unexpected(left.error());
@@ -89,7 +90,7 @@ std::expected<Expr, std::string_view> Parser::parse_comp_exp() {
     });
 }
 
-std::expected<Expr, std::string_view> Parser::parse_add_exp() {
+std::expected<Expr, std::string> Parser::parse_add_exp() {
     auto left = parse_mult_exp();
     if(!left) {
         return std::unexpected(left.error());
@@ -127,7 +128,7 @@ std::expected<Expr, std::string_view> Parser::parse_add_exp() {
     return std::move(left.value());
 }
 
-std::expected<Expr, std::string_view> Parser::parse_mult_exp() {
+std::expected<Expr, std::string> Parser::parse_mult_exp() {
     auto left = parse_call_exp();
     if(!left) {
         return std::unexpected(left.error());
@@ -165,7 +166,7 @@ std::expected<Expr, std::string_view> Parser::parse_mult_exp() {
     return std::move(left.value());
 }
 
-std::expected<Expr, std::string_view> Parser::parse_call_exp() {
+std::expected<Expr, std::string> Parser::parse_call_exp() {
     auto target = parse_prim_exp();
     if(!target) {
         return std::unexpected(target.error());
@@ -207,7 +208,7 @@ std::expected<Expr, std::string_view> Parser::parse_call_exp() {
     return std::move(target.value());
 }
 
-std::expected<Expr, std::string_view> Parser::parse_prim_exp() {
+std::expected<Expr, std::string> Parser::parse_prim_exp() {
     auto token = get_token();
     if(!token) {
         return std::unexpected(token.error());
@@ -233,7 +234,7 @@ std::expected<Expr, std::string_view> Parser::parse_prim_exp() {
     }
 }
 
-std::expected<VarExp, std::string_view> Parser::parse_var_exp() {
+std::expected<VarExp, std::string> Parser::parse_var_exp() {
     auto token = get_token_of(TokenType::IdentToken);
     if(!token) {
         return std::unexpected(token.error());
@@ -245,7 +246,7 @@ std::expected<VarExp, std::string_view> Parser::parse_var_exp() {
     };
 }
 
-std::expected<NumLitExp, std::string_view> Parser::parse_num_lit_exp() {
+std::expected<NumLitExp, std::string> Parser::parse_num_lit_exp() {
     auto token = get_token_of(TokenType::NumberToken);
     if(!token) {
         return std::unexpected(token.error());
@@ -263,7 +264,7 @@ std::expected<NumLitExp, std::string_view> Parser::parse_num_lit_exp() {
     };
 }
 
-std::expected<StrLitExp, std::string_view> Parser::parse_str_lit_exp() {
+std::expected<StrLitExp, std::string> Parser::parse_str_lit_exp() {
     auto token = get_token_of(TokenType::StringToken);
     if(!token) {
         return std::unexpected(token.error());
@@ -274,7 +275,7 @@ std::expected<StrLitExp, std::string_view> Parser::parse_str_lit_exp() {
     };
 }
 
-std::expected<Expr, std::string_view> Parser::parse_paren_exp() {
+std::expected<Expr, std::string> Parser::parse_paren_exp() {
     auto token = get_token_of(TokenType::LParenToken);
     if(!token) {
         return std::unexpected(token.error());
@@ -295,7 +296,7 @@ std::expected<Expr, std::string_view> Parser::parse_paren_exp() {
     return std::move(expr.value());
 }
 
-std::expected<ThisExp, std::string_view> Parser::parse_this_exp() {
+std::expected<ThisExp, std::string> Parser::parse_this_exp() {
     auto token = get_token_of(TokenType::ThisToken);
     if(!token) {
         return std::unexpected(token.error());
@@ -304,7 +305,7 @@ std::expected<ThisExp, std::string_view> Parser::parse_this_exp() {
     return ThisExp{};
 }
 
-std::expected<BoolLitExp, std::string_view> Parser::parse_bool_lit_exp() {
+std::expected<BoolLitExp, std::string> Parser::parse_bool_lit_exp() {
     auto token = get_token();
     if(!token) {
         return std::unexpected(token.error());
@@ -327,7 +328,7 @@ std::expected<BoolLitExp, std::string_view> Parser::parse_bool_lit_exp() {
     };
 }
 
-std::expected<CommaExp, std::string_view> Parser::parse_comma_exp() {
+std::expected<CommaExp, std::string> Parser::parse_comma_exp() {
     auto exp = parse_exp();
     std::vector<Expr> exps;
     if(!exp) {
@@ -356,7 +357,7 @@ std::expected<CommaExp, std::string_view> Parser::parse_comma_exp() {
     };
 }
 
-std::expected<std::unique_ptr<NewObjExp>, std::string_view> Parser::parse_new_obj_exp() {
+std::expected<std::unique_ptr<NewObjExp>, std::string> Parser::parse_new_obj_exp() {
     auto token = get_token_of(TokenType::NewToken);
     if(!token) {
         return std::unexpected(token.error());

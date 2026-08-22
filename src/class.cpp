@@ -1,7 +1,7 @@
 #include <chava/parser.hpp>
 #include <expected>
 
-std::expected<CommaVardec, std::string_view> Parser::parse_comma_vardec() {
+std::expected<CommaVardec, std::string> Parser::parse_comma_vardec() {
     std::vector<Vardec> vardecs;
 
     auto vardec = parse_vardec();
@@ -29,7 +29,7 @@ std::expected<CommaVardec, std::string_view> Parser::parse_comma_vardec() {
     };
 }
 
-std::expected<MethodDef, std::string_view> Parser::parse_method_def() {
+std::expected<MethodDef, std::string> Parser::parse_method_def() {
     auto token = get_token_of(TokenType::MethodToken);
     if(!token) {
         return std::unexpected(token.error());
@@ -77,7 +77,7 @@ std::expected<MethodDef, std::string_view> Parser::parse_method_def() {
     };
 }
 
-std::expected<Constructor, std::string_view> Parser::parse_constructor() {
+std::expected<Constructor, std::string> Parser::parse_constructor() {
     auto token = get_token_of(TokenType::InitToken);
     if(!token) {
         return std::unexpected(token.error());
@@ -158,7 +158,7 @@ std::expected<Constructor, std::string_view> Parser::parse_constructor() {
     };
 }
 
-std::expected<ClassDef, std::string_view> Parser::parse_classdef() {
+std::expected<ClassDef, std::string> Parser::parse_classdef() {
     auto token = get_token_of(TokenType::ClassToken);
     if(!token) {
         return std::unexpected(token.error());

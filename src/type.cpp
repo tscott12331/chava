@@ -1,9 +1,8 @@
 #include <chava/parser.hpp>
 #include <expected>
 #include <format>
-#include <string_view>
 
-std::expected<Type, std::string_view> Parser::parse_type() {
+std::expected<Type, std::string> Parser::parse_type() {
     auto type_token = get_token();
     if(!type_token) {
         return std::unexpected(type_token.error());
@@ -32,7 +31,7 @@ std::expected<Type, std::string_view> Parser::parse_type() {
     return type;
 }
 
-std::expected<Vardec, std::string_view> Parser::parse_vardec() {
+std::expected<Vardec, std::string> Parser::parse_vardec() {
     auto type = parse_type();
     if(!type) {
         return std::unexpected(type.error());
