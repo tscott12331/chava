@@ -46,7 +46,9 @@ struct CommaExp {
 struct VarExp {
     std::string_view var;
 
-
+    void annotate_is_field(bool is_field);
+private:
+    bool is_field = false;
 };
 
 struct StrLitExp {
@@ -82,10 +84,10 @@ struct MethodCallExp {
     MethodCallExp(Expr& target, std::string_view method_name, CommaExp& args) : 
                     target(std::move(target)), method_name(method_name), args(std::move(args)) {}
     // annotation
-    void annotate_ret_type(Type ret_type);
+    void annotate_ret_type(ParsedType ret_type);
 
 private:
-    std::optional<Type> ret_type = std::nullopt;
+    std::optional<ParsedType> ret_type = std::nullopt;
 };
 
 

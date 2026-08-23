@@ -15,7 +15,7 @@ struct CommaVardec {
 struct MethodDef {
     std::string_view method_name;
     CommaVardec params;
-    Type ret_type;
+    ParsedType ret_type;
     std::unique_ptr<BlockStmt> body;
 };
 

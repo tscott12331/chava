@@ -399,6 +399,10 @@ std::expected<std::unique_ptr<NewObjExp>, std::string> Parser::parse_new_obj_exp
 }
 
 
-void MethodCallExp::annotate_ret_type(Type ret_type) {
+void MethodCallExp::annotate_ret_type(ParsedType ret_type) {
     this->ret_type = ret_type;
+}
+
+void VarExp::annotate_is_field(bool is_field) {
+    this->is_field = is_field;
 }

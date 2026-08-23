@@ -3,19 +3,19 @@
 
 #include <string_view>
 #include <variant>
-enum class PrimitiveType {
+enum class ParsedPrimitiveType {
     Int,
     Bool,
     Void
 };
 
-struct ClassType {
+struct ParsedClassType {
     std::string_view class_name;
 };
 
-using Type = std::variant<
-    PrimitiveType,
-    ClassType
+using ParsedType = std::variant<
+    ParsedPrimitiveType,
+    ParsedClassType
 >;
 
 #endif

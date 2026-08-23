@@ -3,7 +3,7 @@
 
 #include <chava/type.hpp>
 struct Vardec {
-    Type type;
+    ParsedType type;
     std::string_view var;
 };
 

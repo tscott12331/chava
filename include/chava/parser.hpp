@@ -38,7 +38,7 @@ private:
     std::expected<Expr, std::string> parse_call_exp();
     std::expected<Expr, std::string> parse_prim_exp();
 
-    std::expected<Type, std::string> parse_type();
+    std::expected<ParsedType, std::string> parse_type();
     std::expected<Vardec, std::string> parse_vardec();
 
     std::expected<CommaVardec, std::string> parse_comma_vardec();

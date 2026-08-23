@@ -2,25 +2,25 @@
 #include <expected>
 #include <format>
 
-std::expected<Type, std::string> Parser::parse_type() {
+std::expected<ParsedType, std::string> Parser::parse_type() {
     auto type_token = get_token();
     if(!type_token) {
         return std::unexpected(type_token.error());
     }
     cursor += 1;
 
-    Type type;
+    ParsedType type;
     switch(type_token->type) {
         case TokenType::IntToken:
-            type = PrimitiveType::Int;
+            type = ParsedPrimitiveType::Int;
             break;
         case TokenType::BoolToken:
-            type = PrimitiveType::Bool;
+            type = ParsedPrimitiveType::Bool;
             break;
         case TokenType::VoidToken:
             return std::unexpected("Can't create a variable with type void");
         case TokenType::IdentToken:
-            type = ClassType{
+            type = ParsedClassType{
                 .class_name=type_token->raw,
             };
             break;
@@ -37,8 +37,8 @@ std::expected<Vardec, std::string> Parser::parse_vardec() {
         return std::unexpected(type.error());
     }
 
-    if(auto primitive = std::get_if<PrimitiveType>(&type.value())) {
-        if(*primitive == PrimitiveType::Void) {
+    if(auto primitive = std::get_if<ParsedPrimitiveType>(&type.value())) {
+        if(*primitive == ParsedPrimitiveType::Void) {
             return std::unexpected("Cannot declare variable of type void");
         }
     }
