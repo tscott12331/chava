@@ -47,10 +47,10 @@ private:
     std::expected<AssignStmt, std::string> parse_assign_stmt();
     std::expected<VardecStmt, std::string> parse_vardec_stmt();
     std::expected<ExpStmt, std::string> parse_exp_stmt();
-    std::expected<std::unique_ptr<WhileStmt>, std::string> parse_while_stmt();
-    std::expected<std::unique_ptr<ReturnStmt>, std::string> parse_return_stmt();
-    std::expected<std::unique_ptr<IfStmt>, std::string> parse_if_stmt();
-    std::expected<std::unique_ptr<BlockStmt>, std::string> parse_block_stmt();
+    std::expected<std::shared_ptr<WhileStmt>, std::string> parse_while_stmt();
+    std::expected<std::shared_ptr<ReturnStmt>, std::string> parse_return_stmt();
+    std::expected<std::shared_ptr<IfStmt>, std::string> parse_if_stmt();
+    std::expected<std::shared_ptr<BlockStmt>, std::string> parse_block_stmt();
 
     std::expected<VarExp, std::string> parse_var_exp();
     std::expected<NumLitExp, std::string> parse_num_lit_exp();
@@ -59,7 +59,7 @@ private:
     std::expected<ThisExp, std::string> parse_this_exp();
     std::expected<BoolLitExp, std::string> parse_bool_lit_exp();
     // TODO: add println support (need to decide if i want token or just general function parsing)
-    std::expected<std::unique_ptr<NewObjExp>, std::string> parse_new_obj_exp();
+    std::expected<std::shared_ptr<NewObjExp>, std::string> parse_new_obj_exp();
 
     std::expected<MethodDef, std::string> parse_method_def();
     std::expected<Constructor, std::string> parse_constructor();

@@ -1,6 +1,7 @@
 #ifndef TYPECHECKER_HPP
 #define TYPECHECKER_HPP
 
+#include "chava/stmt.hpp"
 #include <chava/parser.hpp>
 #include <expected>
 #include <functional>
@@ -43,7 +44,7 @@ class ClassType : Type {
 class TypeMap {
 public:
     TypeMap();
-    TypeMap(std::vector<Type> types);
+    TypeMap(const std::vector<std::shared_ptr<Type>>& types);
 
     std::optional<Type&> get_type(std::string_view);
 private:
@@ -52,6 +53,7 @@ private:
 
 class Scope {
 public:
+    Scope();
     Scope(Scope& parent);
     std::expected<void, std::string> define(std::string_view var_name, Type& type);
 private:
@@ -77,10 +79,17 @@ public:
 private:
     Program& program;
     TypeMap type_map;
+    Scope scope;
 
     std::expected<void, std::string> check_class();
-    std::expected<void, std::string> check_stmt(Stmt &stmt);
+    std::expected<void, std::string> check_stmt(Stmt& stmt);
     std::expected<void, std::string> check_exp();
+
+    std::expected<void, std::string> check_while_stmt(std::shared_ptr<WhileStmt> stmt);
+
+    std::expected<void, std::string> check_guard(Expr& guard);
+
+    std::expected<std::shared_ptr<Type>, std::string> resolve_exp_type(Expr& exp);
 };
 
 #endif

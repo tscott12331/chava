@@ -22,11 +22,11 @@ using Stmt = std::variant<
     ExpStmt,
     VardecStmt,
     AssignStmt,
-    std::unique_ptr<WhileStmt>,
-    std::unique_ptr<BreakStmt>,
-    std::unique_ptr<ReturnStmt>,
-    std::unique_ptr<IfStmt>,
-    std::unique_ptr<BlockStmt>
+    std::shared_ptr<WhileStmt>,
+    std::shared_ptr<BreakStmt>,
+    std::shared_ptr<ReturnStmt>,
+    std::shared_ptr<IfStmt>,
+    std::shared_ptr<BlockStmt>
 >;
 
 struct ExpStmt {

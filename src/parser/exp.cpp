@@ -43,7 +43,7 @@ std::expected<Expr, std::string> Parser::parse_eq_exp() {
             return std::unexpected(right.error());
         }
 
-        left = std::make_unique<BinaryExp>(BinaryExp{
+        left = std::make_shared<BinaryExp>(BinaryExp{
             .left=std::move(left.value()),
             .op=op,
             .right=std::move(right.value()),
@@ -83,7 +83,7 @@ std::expected<Expr, std::string> Parser::parse_comp_exp() {
         return std::unexpected(right.error());
     }
 
-    return std::make_unique<BinaryExp>(BinaryExp{
+    return std::make_shared<BinaryExp>(BinaryExp{
         .left=std::move(left.value()),
         .op=op,
         .right=std::move(right.value()),
@@ -116,7 +116,7 @@ std::expected<Expr, std::string> Parser::parse_add_exp() {
             return std::unexpected(right.error());
         }
 
-        left = std::make_unique<BinaryExp>(BinaryExp{
+        left = std::make_shared<BinaryExp>(BinaryExp{
             .left=std::move(left.value()),
             .op=op,
             .right=std::move(right.value()),
@@ -154,7 +154,7 @@ std::expected<Expr, std::string> Parser::parse_mult_exp() {
             return std::unexpected(right.error());
         }
 
-        left = std::make_unique<BinaryExp>(BinaryExp{
+        left = std::make_shared<BinaryExp>(BinaryExp{
             .left=std::move(left.value()),
             .op=op,
             .right=std::move(right.value()),
@@ -196,7 +196,7 @@ std::expected<Expr, std::string> Parser::parse_call_exp() {
         token = get_token_of(TokenType::RParenToken);
         cursor += 1;
 
-        target = std::make_unique<MethodCallExp>(MethodCallExp(
+        target = std::make_shared<MethodCallExp>(MethodCallExp(
             target.value(),
             method_name->raw,
             args.value()
@@ -242,9 +242,7 @@ std::expected<VarExp, std::string> Parser::parse_var_exp() {
     }
     cursor += 1;
 
-    return VarExp{
-        .var=token->raw
-    };
+    return VarExp(token->raw);
 }
 
 std::expected<NumLitExp, std::string> Parser::parse_num_lit_exp() {
@@ -361,7 +359,7 @@ std::expected<CommaExp, std::string> Parser::parse_comma_exp() {
     };
 }
 
-std::expected<std::unique_ptr<NewObjExp>, std::string> Parser::parse_new_obj_exp() {
+std::expected<std::shared_ptr<NewObjExp>, std::string> Parser::parse_new_obj_exp() {
     auto token = get_token_of(TokenType::NewToken);
     if(!token) {
         return std::unexpected(token.error());
@@ -392,7 +390,7 @@ std::expected<std::unique_ptr<NewObjExp>, std::string> Parser::parse_new_obj_exp
     }
     cursor += 1;
 
-    return std::make_unique<NewObjExp>(NewObjExp{
+    return std::make_shared<NewObjExp>(NewObjExp{
         .class_name=class_name,
         .args=std::move(args.value()),
     });

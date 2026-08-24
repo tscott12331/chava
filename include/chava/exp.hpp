@@ -34,9 +34,9 @@ using Expr = std::variant<
     NumLitExp,
     BoolLitExp,
     ThisExp,
-    std::unique_ptr<NewObjExp>,
-    std::unique_ptr<MethodCallExp>,
-    std::unique_ptr<BinaryExp>
+    std::shared_ptr<NewObjExp>,
+    std::shared_ptr<MethodCallExp>,
+    std::shared_ptr<BinaryExp>
 >;
 
 struct CommaExp {
@@ -45,6 +45,8 @@ struct CommaExp {
 
 struct VarExp {
     std::string_view var;
+
+    VarExp(std::string_view var) : var(var) {};
 
     void annotate_is_field(bool is_field);
 private:
