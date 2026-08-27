@@ -121,13 +121,13 @@ std::expected<void, std::string> TypeChecker::check_guard(Expr& guard) {
 std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_exp_type(Expr& exp) {
     return std::visit(overloaded {
         [this](VarExp& exp) -> std::expected<std::shared_ptr<Type>, std::string> { return resolve_var_exp(exp); },
-        [this](StrLitExp& exp) -> std::expected<std::shared_ptr<Type>, std::string> { return TypeChecker::bi_string; },
-        [this](NumLitExp& exp) -> std::expected<std::shared_ptr<Type>, std::string> { return TypeChecker::pr_int; },
-        [this](BoolLitExp& exp) -> std::expected<std::shared_ptr<Type>, std::string> { return TypeChecker::pr_bool; },
+        [](StrLitExp& exp) -> std::expected<std::shared_ptr<Type>, std::string> { return TypeChecker::bi_string; },
+        [](NumLitExp& exp) -> std::expected<std::shared_ptr<Type>, std::string> { return TypeChecker::pr_int; },
+        [](BoolLitExp& exp) -> std::expected<std::shared_ptr<Type>, std::string> { return TypeChecker::pr_bool; },
         [this](ThisExp& exp) -> std::expected<std::shared_ptr<Type>, std::string> { return resolve_this_exp(); },
         [this](std::shared_ptr<NewObjExp>& exp) -> std::expected<std::shared_ptr<Type>, std::string> { return resolve_new_obj_exp(exp); },
         [this](std::shared_ptr<MethodCallExp>& exp) -> std::expected<std::shared_ptr<Type>, std::string> {},
-        [this](std::shared_ptr<BinaryExp>& exp) -> std::expected<std::shared_ptr<Type>, std::string> {},
+        [this](std::shared_ptr<BinaryExp>& exp) -> std::expected<std::shared_ptr<Type>, std::string> { return resolve_binary_exp(exp); },
     }, exp);
 }
 
@@ -199,6 +199,14 @@ bool check_str_concat(std::shared_ptr<Type> left, std::shared_ptr<Type> right) {
 }
 
 std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_add_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right) {
+    if(op != Op::Add) {
+        if(types_equal(left, TypeChecker::pr_int) && types_equal(right, TypeChecker::pr_int)) {
+            return TypeChecker::pr_int;
+        }
+
+        return std::unexpected(std::format("Can't subtract {} from {}", left->get_name(), right->get_name()));
+    }
+
     if(check_str_concat(left, right)) {
         return TypeChecker::bi_string;
     }
@@ -211,6 +219,26 @@ std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_add_exp(s
 
     return std::unexpected(std::format("Can't add {} to {}", left->get_name(), right->get_name()));
 }
-std::expected<std::shared_ptr<Type>, std::string> resolve_mult_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);
-std::expected<std::shared_ptr<Type>, std::string> resolve_comp_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);
-std::expected<std::shared_ptr<Type>, std::string> resolve_eq_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);
+
+std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_mult_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right) {
+    if(!types_equal(left, TypeChecker::pr_int) || !types_equal(right, TypeChecker::pr_int)) {
+        return std::unexpected(std::format("Can't mult/divide types {} and {}", left->get_name(), right->get_name()));
+    }
+
+    return TypeChecker::pr_int;
+}
+
+std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_comp_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right) {
+    if(!types_equal(left, TypeChecker::pr_int) || !types_equal(right, TypeChecker::pr_int)) {
+        return std::unexpected(std::format("Can't mult/divide types {} and {}", left->get_name(), right->get_name()));
+    }
+
+    return TypeChecker::pr_bool;
+}
+std::expected<std::shared_ptr<Type>, std::string> resolve_eq_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right) {
+    if(!left->is_subtype_of(right) && !right->is_subtype_of(left)) {
+        return std::unexpected(std::format("Cannot check equality of non related types {} and {}", left->get_name(), right->get_name()));
+    }
+
+    return TypeChecker::pr_bool;
+}
