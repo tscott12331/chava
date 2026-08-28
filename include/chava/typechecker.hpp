@@ -109,9 +109,10 @@ private:
 
     std::expected<void, std::string> check_class();
     std::expected<void, std::string> check_stmt(Stmt& stmt);
-    std::expected<void, std::string> check_exp();
+    std::expected<void, std::string> check_exp(Expr& exp);
 
     std::expected<void, std::string> check_while_stmt(std::shared_ptr<WhileStmt> stmt);
+    std::expected<void, std::string> check_vardec_stmt(VardecStmt& stmt);
 
     std::expected<void, std::string> check_guard(Expr& guard);
 

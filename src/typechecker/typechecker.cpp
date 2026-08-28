@@ -1,3 +1,4 @@
+#include "chava/type.hpp"
 #include <chava/stmt.hpp>
 #include <chava/typechecker.hpp>
 #include <expected>
@@ -76,7 +77,7 @@ std::expected<void, std::string> TypeChecker::typecheck() {
 
 std::expected<void, std::string> TypeChecker::check_stmt(Stmt& stmt) {
     auto res = std::visit(overloaded {
-        [this](ExpStmt& stmt) -> std::expected<void, std::string> {},
+        [this](ExpStmt& stmt) -> std::expected<void, std::string> { return check_exp(stmt.exp); },
         [this](VardecStmt& stmt) -> std::expected<void, std::string> {},
         [this](AssignStmt& stmt) -> std::expected<void, std::string> {},
         [this](std::shared_ptr<WhileStmt>& stmt) -> std::expected<void, std::string> { return check_while_stmt(stmt); },
@@ -93,6 +94,14 @@ std::expected<void, std::string> TypeChecker::check_stmt(Stmt& stmt) {
     return {};
 }
 
+std::expected<void, std::string> TypeChecker::check_exp(Expr& exp) {
+    auto type = resolve_exp_type(exp);
+    if(!type) {
+        return std::unexpected(type.error());
+    }
+    return {};
+}
+
 std::expected<void, std::string> TypeChecker::check_while_stmt(std::shared_ptr<WhileStmt> stmt) {
     if(auto guard = check_guard(stmt->guard); !guard) {
         return std::unexpected(guard.error());
@@ -103,6 +112,48 @@ std::expected<void, std::string> TypeChecker::check_while_stmt(std::shared_ptr<W
     }
 
     return {};
+}
+
+std::expected<void, std::string> TypeChecker::check_vardec_stmt(VardecStmt& stmt) {
+    auto type = std::visit(overloaded {
+        [this](ParsedPrimitiveType type) -> std::expected<std::shared_ptr<Type>, std::string> {
+            switch(type) {
+                case ParsedPrimitiveType::Int:
+                    if(auto t = type_map.get_type("int")) {
+                        return t.value();
+                    }
+                    return std::unexpected("Invalid type in vardec");
+                case ParsedPrimitiveType::Bool:
+                    if(auto t = type_map.get_type("bool")) {
+                        return t.value();
+                    }
+                    return std::unexpected("Invalid type in vardec");
+                case ParsedPrimitiveType::Void:
+                    if(auto t = type_map.get_type("void")) {
+                        return t.value();
+                    }
+                    return std::unexpected("Invalid type in vardec");
+                default:
+                    return std::unexpected("Unhandled primitive type in vardec");
+            }
+        },
+        [this](ParsedClassType class_type) -> std::expected<std::shared_ptr<Type>, std::string> {
+            return type_map.get_type(class_type.class_name)
+                .transform(
+                    [](std::shared_ptr<Type> t) -> std::expected<std::shared_ptr<Type>, std::string> 
+                    {
+                        return t;
+                    })
+                .value_or(std::unexpected("Invalid type in vardec"));
+        },
+    }, stmt.vardec.type);
+
+    if(!type) {
+        return std::unexpected(type.error());
+    }
+
+    auto var_name = std::string(stmt.vardec.var);
+    return scope.define(var_name, type.value());
 }
 
 std::expected<void, std::string> TypeChecker::check_guard(Expr& guard) {
