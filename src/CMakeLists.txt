@@ -5,6 +5,9 @@ add_library(chava_lib
     parser/parser.cpp
     parser/stmt.cpp
     parser/type.cpp
+    typechecker/typechecker.cpp
+    typechecker/scope.cpp
+    typechecker/typemap.cpp
 )
 
 target_include_directories(chava_lib PUBLIC

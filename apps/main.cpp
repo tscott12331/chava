@@ -1,3 +1,4 @@
+#include "chava/typechecker.hpp"
 #include <format>
 #include <iostream>
 #include <chava/tokenizer.hpp>
@@ -7,7 +8,7 @@
 
 int main() {
     std::string input = R"(
-string y;
+String y;
 y = "balesh";
 int x;
 x = (5 + 2) + y * 7 - 6 /2;
@@ -20,8 +21,6 @@ while(x - 2 > 5 * 2 * 6 - (5+2) - 5 == x + 5 < 7) {
 a.something(51);
 b.something_else("hahaaha", 5+2);
 
-Car car;
-car = new Car("woah there", true);
 )";
     int line_num = 1;
     for(const auto line : std::views::split(input, '\n')) {
@@ -43,4 +42,8 @@ car = new Car("woah there", true);
     std::cout << "parsed successfully\n";
     std::cout << program->classdefs.size() << " classes\n";
     std::cout << program->stmts.size() << " stmts\n";
+
+    if(auto typecheck_res = TypeChecker::Typecheck(program.value()); !typecheck_res) {
+        std::cout << typecheck_res.error() << "\n";
+    }
 }

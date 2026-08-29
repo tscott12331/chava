@@ -61,7 +61,7 @@ public:
     TypeMap();
     TypeMap(const std::vector<std::shared_ptr<Type>>& types);
 
-    std::optional<std::shared_ptr<Type>> get_type(std::string_view);
+    std::optional<std::shared_ptr<Type>> get_type(const std::string&);
 private:
     std::unordered_map<std::string, std::shared_ptr<Type>> known_types;
 };
@@ -113,6 +113,10 @@ private:
 
     std::expected<void, std::string> check_while_stmt(std::shared_ptr<WhileStmt> stmt);
     std::expected<void, std::string> check_vardec_stmt(VardecStmt& stmt);
+    std::expected<void, std::string> check_assign_stmt(AssignStmt& stmt);
+    std::expected<void, std::string> check_if_stmt(std::shared_ptr<IfStmt> stmt);
+    std::expected<void, std::string> check_block_stmt(std::shared_ptr<BlockStmt> stmt);
+    std::expected<void, std::string> check_return_stmt(std::shared_ptr<ReturnStmt> stmt);
 
     std::expected<void, std::string> check_guard(Expr& guard);
 
