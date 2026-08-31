@@ -12,7 +12,10 @@ std::expected<Stmt, std::string> Parser::parse_stmt() {
     switch(token.type) {
         case TokenType::BreakToken:
             cursor += 1;
-            return std::make_shared<BreakStmt>(BreakStmt{});
+            return Stmt{
+                .value=std::make_shared<BreakStmt>(BreakStmt{}),
+                .pos=std::move(token.pos),
+            };
         case TokenType::IntToken:
         case TokenType::BoolToken:
         case TokenType::VoidToken:
@@ -44,7 +47,7 @@ std::expected<Stmt, std::string> Parser::parse_stmt() {
     }
 }
 
-std::expected<AssignStmt, std::string> Parser::parse_assign_stmt() {
+std::expected<Stmt, std::string> Parser::parse_assign_stmt() {
     auto var_token = get_token_of(TokenType::IdentToken);
     if(!var_token) {
         return std::unexpected(var_token.error());
@@ -68,13 +71,16 @@ std::expected<AssignStmt, std::string> Parser::parse_assign_stmt() {
     }
     cursor += 1;
 
-    return AssignStmt{
-        .var=var_token->raw,
-        .val=std::move(val.value()),
+    return Stmt{
+        .value=AssignStmt{
+            .var=var_token->raw,
+            .val=std::move(val.value()),
+        },
+        .pos=std::move(var_token->pos),
     };
 }
 
-std::expected<VardecStmt, std::string> Parser::parse_vardec_stmt() {
+std::expected<Stmt, std::string> Parser::parse_vardec_stmt() {
     auto vardec = parse_vardec();
     if(!vardec) {
         return std::unexpected(vardec.error());
@@ -86,12 +92,15 @@ std::expected<VardecStmt, std::string> Parser::parse_vardec_stmt() {
     }
     cursor += 1;
 
-    return VardecStmt{
-        .vardec=std::move(vardec.value()),
+    return Stmt{
+            .value=VardecStmt{
+            .vardec=std::move(vardec.value()),
+        },
+        .pos=vardec->pos,
     };
 }
 
-std::expected<ExpStmt, std::string> Parser::parse_exp_stmt() {
+std::expected<Stmt, std::string> Parser::parse_exp_stmt() {
     auto exp = parse_exp();
     if(!exp) {
         return std::unexpected(exp.error());
@@ -103,28 +112,34 @@ std::expected<ExpStmt, std::string> Parser::parse_exp_stmt() {
     }
     cursor += 1;
 
-    return ExpStmt{
-        .exp=std::move(exp.value()),
+    return Stmt{
+        .value=ExpStmt{
+            .exp=std::move(exp.value()),
+        },
+        .pos=exp->pos,
     };
 }
 
-std::expected<std::shared_ptr<ReturnStmt>, std::string> Parser::parse_return_stmt() {
-    auto token = get_token_of(TokenType::ReturnToken);
-    if(!token) {
-        return std::unexpected(token.error());
+std::expected<Stmt, std::string> Parser::parse_return_stmt() {
+    auto return_token = get_token_of(TokenType::ReturnToken);
+    if(!return_token) {
+        return std::unexpected(return_token.error());
     }
 
     cursor += 1;
 
-    token = get_token();
+    auto token = get_token();
     if(!token) {
         return std::unexpected(token.error());
     }
 
     if(token->type == TokenType::SemiColonToken) {
-        return std::make_shared<ReturnStmt>(ReturnStmt{
-            .val=std::nullopt
-        });
+        return Stmt{
+            .value=std::make_shared<ReturnStmt>(ReturnStmt{
+                .val=std::nullopt
+            }),
+            .pos=return_token->pos,
+        };
     }
 
     auto val = parse_exp();
@@ -137,19 +152,22 @@ std::expected<std::shared_ptr<ReturnStmt>, std::string> Parser::parse_return_stm
         return std::unexpected(token.error());
     }
 
-    return std::make_shared<ReturnStmt>(ReturnStmt{
-        .val=std::move(val.value())
-    });
+    return Stmt{
+        .value=std::make_shared<ReturnStmt>(ReturnStmt{
+            .val=std::move(val.value())
+        }),
+        .pos=std::move(return_token->pos),
+    };
 }
 
-std::expected<std::shared_ptr<WhileStmt>, std::string> Parser::parse_while_stmt() {
-    auto token = get_token_of(TokenType::WhileToken);
-    if(!token) {
-        return std::unexpected(token.error());
+std::expected<Stmt, std::string> Parser::parse_while_stmt() {
+    auto while_token = get_token_of(TokenType::WhileToken);
+    if(!while_token) {
+        return std::unexpected(while_token.error());
     }
     cursor += 1;
 
-    token = get_token_of(TokenType::LParenToken);
+    auto token = get_token_of(TokenType::LParenToken);
     if(!token) {
         return std::unexpected(token.error());
     }
@@ -168,20 +186,23 @@ std::expected<std::shared_ptr<WhileStmt>, std::string> Parser::parse_while_stmt(
         return std::unexpected(body.error());
     }
 
-    return std::make_shared<WhileStmt>(WhileStmt{
-        .guard=std::move(guard.value()),
-        .body=std::move(body.value())
-    });
+    return Stmt{
+        .value=std::make_shared<WhileStmt>(WhileStmt{
+            .guard=std::move(guard.value()),
+            .body=std::move(body.value())
+        }),
+        .pos=std::move(while_token->pos),
+    };
 }
 
-std::expected<std::shared_ptr<IfStmt>, std::string> Parser::parse_if_stmt() {
-    auto token = get_token_of(TokenType::IfToken);
-    if(!token) {
-        return std::unexpected(token.error());
+std::expected<Stmt, std::string> Parser::parse_if_stmt() {
+    auto if_token = get_token_of(TokenType::IfToken);
+    if(!if_token) {
+        return std::unexpected(if_token.error());
     }
     cursor += 1;
 
-    token = get_token_of(TokenType::LParenToken);
+    auto token = get_token_of(TokenType::LParenToken);
     if(!token) {
         return std::unexpected(token.error());
     }
@@ -215,23 +236,27 @@ std::expected<std::shared_ptr<IfStmt>, std::string> Parser::parse_if_stmt() {
         else_body = std::move(stmt.value());
     }
 
-    return std::make_shared<IfStmt>(IfStmt{
-        .guard=std::move(guard.value()),
-        .body=std::move(body.value()),
-        .else_body=std::move(else_body)
-    });
+    return Stmt{
+        .value=std::make_shared<IfStmt>(IfStmt{
+            .guard=std::move(guard.value()),
+            .body=std::move(body.value()),
+            .else_body=std::move(else_body)
+        }),
+        .pos=std::move(if_token->pos),
+    };
 }
 
-std::expected<std::shared_ptr<BlockStmt>, std::string> Parser::parse_block_stmt() {
-    auto token = get_token_of(TokenType::LBracketToken);
-    if(!token) {
-        return std::unexpected(token.error());
+std::expected<Stmt, std::string> Parser::parse_block_stmt() {
+    auto block_start_token = get_token_of(TokenType::LBracketToken);
+    if(!block_start_token) {
+        return std::unexpected(block_start_token.error());
     }
     cursor += 1;
 
     std::vector<Stmt> stmts;
     
-    while((token = get_token()) && token && token->type != TokenType::RBracketToken) {
+    std::expected<Token, std::string> bracket_token;
+    while((bracket_token = get_token()) && bracket_token && bracket_token->type != TokenType::RBracketToken) {
         auto stmt = parse_stmt();
         if(!stmt) {
             return std::unexpected(stmt.error());
@@ -240,14 +265,17 @@ std::expected<std::shared_ptr<BlockStmt>, std::string> Parser::parse_block_stmt(
         stmts.push_back(std::move(stmt.value()));
     }
 
-    token = get_token_of(TokenType::RBracketToken);
-    if(!token) {
-        return std::unexpected(token.error());
+    bracket_token = get_token_of(TokenType::RBracketToken);
+    if(!bracket_token) {
+        return std::unexpected(bracket_token.error());
     }
     cursor += 1;
 
-    return std::make_shared<BlockStmt>(BlockStmt{
-        .stmts=std::move(stmts)
-    });
+    return Stmt{
+        .value=std::make_shared<BlockStmt>(BlockStmt{
+            .stmts=std::move(stmts)
+        }),
+        .pos=std::move(block_start_token->pos),
+    };
 }
 

@@ -1,6 +1,7 @@
 #ifndef EXP_HPP
 #define EXP_HPP
 
+#include "chava/parser_misc.hpp"
 #include <memory>
 #include <chava/type.hpp>
 #include <optional>
@@ -28,7 +29,7 @@ enum class Op {
     Gt,
 };
 
-using Expr = std::variant<
+using ExpVariant = std::variant<
     VarExp,
     StrLitExp,
     NumLitExp,
@@ -39,8 +40,10 @@ using Expr = std::variant<
     std::shared_ptr<BinaryExp>
 >;
 
+using Exp = PositionWrapper<ExpVariant>;
+
 struct CommaExp {
-    std::vector<Expr> exps;
+    std::vector<Exp> exps;
 };
 
 struct VarExp {
@@ -73,17 +76,17 @@ struct NewObjExp {
 };
 
 struct BinaryExp {
-    Expr left;
+    Exp left;
     Op op;
-    Expr right;
+    Exp right;
 };
 
 struct MethodCallExp {
-    Expr target;
+    Exp target;
     std::string_view method_name;
     CommaExp args;
 
-    MethodCallExp(Expr& target, std::string_view method_name, CommaExp& args) : 
+    MethodCallExp(Exp& target, std::string_view method_name, CommaExp& args) : 
                     target(std::move(target)), method_name(method_name), args(std::move(args)) {}
     // annotation
     void annotate_ret_type(ParsedType ret_type);

@@ -1,6 +1,7 @@
 #ifndef TYPECHECKER_HPP
 #define TYPECHECKER_HPP
 
+#include "chava/parser_misc.hpp"
 #include "chava/stmt.hpp"
 #include <chava/parser.hpp>
 #include <expected>
@@ -16,6 +17,7 @@ public:
     Type(std::string name) : name(name) {};
 
     std::string_view get_name();
+    uint get_depth();
     virtual std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_ret(MethodCallExp& method_call) = 0;
     virtual bool is_subtype_of(std::shared_ptr<Type> other) = 0;
 
@@ -28,6 +30,17 @@ public:
 
 private:
     std::string name;
+    uint depth = 0;
+};
+
+class TypeMap {
+public:
+    TypeMap();
+    TypeMap(const std::vector<std::shared_ptr<Type>>& types);
+
+    std::optional<std::shared_ptr<Type>> get_type(const std::string&);
+private:
+    std::unordered_map<std::string, std::shared_ptr<Type>> known_types;
 };
 
 bool types_equal(const std::shared_ptr<Type> left, const std::shared_ptr<Type> right);
@@ -35,6 +48,14 @@ bool is_int(std::shared_ptr<Type> type);
 bool is_bool(std::shared_ptr<Type> type);
 bool is_void(std::shared_ptr<Type> type);
 
+class MethodSignature {
+public:
+    MethodSignature(MethodDefValue& method_def);
+private:
+    std::string name;
+    std::vector<std::shared_ptr<Type>> param_types;
+    Type& ret_type;
+};
 
 class PrimitiveType : public Type {
 public:
@@ -47,23 +68,23 @@ public:
 class ClassType : public Type {
     // TODO: implement constructor
 public:
-    ClassType(std::string name);
+    ClassType(ClassDef& classdef);
     std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_ret(MethodCallExp& method_call) override;
     bool is_subtype_of(std::shared_ptr<Type> other) override;
 
+    std::expected<void, std::string> populate(TypeMap& type_map);
 private:
-    std::optional<std::shared_ptr<Type>> parent;
+    std::expected<void, std::string> populate_fields(TypeMap& type_map);
+    std::expected<void, std::string> populate_methods(TypeMap& type_map);
+
+    bool has_field(const std::string& field_name);
+
+    std::optional<std::shared_ptr<ClassType>> parent;
     std::unordered_map<std::string, std::shared_ptr<Type>> fields;
-};
+    std::unordered_map<std::string, MethodSignature> methods;
 
-class TypeMap {
-public:
-    TypeMap();
-    TypeMap(const std::vector<std::shared_ptr<Type>>& types);
-
-    std::optional<std::shared_ptr<Type>> get_type(const std::string&);
-private:
-    std::unordered_map<std::string, std::shared_ptr<Type>> known_types;
+    ClassDef& classdef;
+    bool is_populated = false;
 };
 
 class Scope {
@@ -80,14 +101,6 @@ private:
     std::unordered_map<std::string, std::shared_ptr<Type>> scope;
 };
 
-class MethodSignature {
-public:
-    MethodSignature(MethodDef& method_def);
-private:
-    std::string name;
-    std::vector<std::shared_ptr<Type>> param_types;
-    Type& ret_type;
-};
 
 
 class TypeChecker {
@@ -108,24 +121,24 @@ private:
     Scope scope;
 
     std::expected<void, std::string> check_class();
-    std::expected<void, std::string> check_stmt(Stmt& stmt);
-    std::expected<void, std::string> check_exp(Expr& exp);
+    std::expected<void, std::string> check_stmt(const PositionWrapper<StmtVariant>& stmt);
+    std::expected<void, std::string> check_exp(const Exp& exp);
 
-    std::expected<void, std::string> check_while_stmt(std::shared_ptr<WhileStmt> stmt);
-    std::expected<void, std::string> check_vardec_stmt(VardecStmt& stmt);
-    std::expected<void, std::string> check_assign_stmt(AssignStmt& stmt);
-    std::expected<void, std::string> check_if_stmt(std::shared_ptr<IfStmt> stmt);
-    std::expected<void, std::string> check_block_stmt(std::shared_ptr<BlockStmt> stmt);
-    std::expected<void, std::string> check_return_stmt(std::shared_ptr<ReturnStmt> stmt);
+    std::expected<void, std::string> check_while_stmt(const PositionWrapper<WhileStmt>& stmt);
+    std::expected<void, std::string> check_vardec_stmt(const PositionWrapper<VardecStmt>& stmt);
+    std::expected<void, std::string> check_assign_stmt(const PositionWrapper<AssignStmt>& stmt);
+    std::expected<void, std::string> check_if_stmt(const PositionWrapper<IfStmt>& stmt);
+    std::expected<void, std::string> check_block_stmt(const PositionWrapper<BlockStmt>& stmt);
+    std::expected<void, std::string> check_return_stmt(const PositionWrapper<ReturnStmt>& stmt);
 
-    std::expected<void, std::string> check_guard(Expr& guard);
+    std::expected<void, std::string> check_guard(const Exp& guard);
 
-    std::expected<std::shared_ptr<Type>, std::string> resolve_exp_type(Expr& exp);
-    std::expected<std::shared_ptr<Type>, std::string> resolve_var_exp(VarExp& exp);
+    std::expected<std::shared_ptr<Type>, std::string> resolve_exp_type(const Exp& exp);
+    std::expected<std::shared_ptr<Type>, std::string> resolve_var_exp(const PositionWrapper<VarExp>& exp);
     std::expected<std::shared_ptr<Type>, std::string> resolve_this_exp();
-    std::expected<std::shared_ptr<Type>, std::string> resolve_new_obj_exp(std::shared_ptr<NewObjExp>& exp);
-    std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_exp(std::shared_ptr<MethodCallExp>& exp);
-    std::expected<std::shared_ptr<Type>, std::string> resolve_binary_exp(std::shared_ptr<BinaryExp>& exp);
+    std::expected<std::shared_ptr<Type>, std::string> resolve_new_obj_exp(const PositionWrapper<NewObjExp>& exp);
+    std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_exp(const PositionWrapper<MethodCallExp>& exp);
+    std::expected<std::shared_ptr<Type>, std::string> resolve_binary_exp(const PositionWrapper<BinaryExp>& exp);
     std::expected<std::shared_ptr<Type>, std::string> resolve_add_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);
     std::expected<std::shared_ptr<Type>, std::string> resolve_mult_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);
     std::expected<std::shared_ptr<Type>, std::string> resolve_comp_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);

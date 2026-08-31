@@ -1,6 +1,13 @@
+#include "chava/common.hpp"
 #include <chava/parser.hpp>
 #include <expected>
 #include <format>
+#include <stdexcept>
+#include <variant>
+
+const std::string INT_NAME = "int";
+const std::string BOOL_NAME = "bool";
+const std::string VOID_NAME = "void";
 
 std::expected<ParsedType, std::string> Parser::parse_type() {
     auto type_token = get_token();
@@ -9,7 +16,7 @@ std::expected<ParsedType, std::string> Parser::parse_type() {
     }
     cursor += 1;
 
-    ParsedType type;
+    ParsedTypeVariant type;
     switch(type_token->type) {
         case TokenType::IntToken:
             type = ParsedPrimitiveType::Int;
@@ -28,7 +35,10 @@ std::expected<ParsedType, std::string> Parser::parse_type() {
             return std::unexpected(std::format("Can't use {} as a type", token_to_string(type_token.value())));
     }
 
-    return type;
+    return ParsedType{
+        .value=type,
+        .pos=std::move(type_token->pos),
+    };
 }
 
 std::expected<Vardec, std::string> Parser::parse_vardec() {
@@ -37,7 +47,7 @@ std::expected<Vardec, std::string> Parser::parse_vardec() {
         return std::unexpected(type.error());
     }
 
-    if(auto primitive = std::get_if<ParsedPrimitiveType>(&type.value())) {
+    if(auto primitive = std::get_if<ParsedPrimitiveType>(&type.value().value)) {
         if(*primitive == ParsedPrimitiveType::Void) {
             return std::unexpected("Cannot declare variable of type void");
         }
@@ -50,7 +60,24 @@ std::expected<Vardec, std::string> Parser::parse_vardec() {
     cursor += 1;
 
     return Vardec{
-        .type=type.value(),
-        .var=var_token->raw,
+        .value=VardecValue{
+            .type=type.value(),
+            .var=var_token->raw,
+        },
+        .pos=type->pos,
     };
+}
+
+std::string to_string(const ParsedType& parsed_type) {
+    return std::visit(overloaded {
+        [](const ParsedPrimitiveType& prm) -> std::string {
+            switch(prm) {
+                case ParsedPrimitiveType::Int: return INT_NAME;
+                case ParsedPrimitiveType::Bool: return BOOL_NAME;
+                case ParsedPrimitiveType::Void: return VOID_NAME;
+                default: throw std::logic_error("Unhandled primitive to_string type");
+            }
+        },
+        [](const ParsedClassType& cls) -> std::string { return std::string(cls.class_name); },
+    }, parsed_type.value);
 }

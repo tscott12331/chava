@@ -8,7 +8,7 @@
 #include <string_view>
 #include <system_error>
 
-std::expected<Expr, std::string> Parser::parse_exp() {
+std::expected<Exp, std::string> Parser::parse_exp() {
     auto token = get_token();
     if(!token) {
         return std::unexpected(token.error());
@@ -17,7 +17,7 @@ std::expected<Expr, std::string> Parser::parse_exp() {
     return parse_eq_exp();
 }
 
-std::expected<Expr, std::string> Parser::parse_eq_exp() {
+std::expected<Exp, std::string> Parser::parse_eq_exp() {
     auto left = parse_comp_exp();
     if(!left) {
         return std::unexpected(left.error());
@@ -43,11 +43,14 @@ std::expected<Expr, std::string> Parser::parse_eq_exp() {
             return std::unexpected(right.error());
         }
 
-        left = std::make_shared<BinaryExp>(BinaryExp{
-            .left=std::move(left.value()),
-            .op=op,
-            .right=std::move(right.value()),
-        });
+        left = Exp{
+                .value=std::make_shared<BinaryExp>(BinaryExp{
+                .left=std::move(left.value()),
+                .op=op,
+                .right=std::move(right.value()),
+            }),
+            .pos=left->pos,
+        };
 
         token = get_token();
     }
@@ -55,7 +58,7 @@ std::expected<Expr, std::string> Parser::parse_eq_exp() {
     return std::move(left.value());
 }
 
-std::expected<Expr, std::string> Parser::parse_comp_exp() {
+std::expected<Exp, std::string> Parser::parse_comp_exp() {
     auto left = parse_add_exp();
     if(!left) {
         return std::unexpected(left.error());
@@ -83,14 +86,17 @@ std::expected<Expr, std::string> Parser::parse_comp_exp() {
         return std::unexpected(right.error());
     }
 
-    return std::make_shared<BinaryExp>(BinaryExp{
-        .left=std::move(left.value()),
-        .op=op,
-        .right=std::move(right.value()),
-    });
+    return Exp{
+        .value=std::make_shared<BinaryExp>(BinaryExp{
+            .left=std::move(left.value()),
+            .op=op,
+            .right=std::move(right.value()),
+        }),
+        .pos=left->pos,
+    };
 }
 
-std::expected<Expr, std::string> Parser::parse_add_exp() {
+std::expected<Exp, std::string> Parser::parse_add_exp() {
     auto left = parse_mult_exp();
     if(!left) {
         return std::unexpected(left.error());
@@ -116,11 +122,14 @@ std::expected<Expr, std::string> Parser::parse_add_exp() {
             return std::unexpected(right.error());
         }
 
-        left = std::make_shared<BinaryExp>(BinaryExp{
-            .left=std::move(left.value()),
-            .op=op,
-            .right=std::move(right.value()),
-        });
+        left = Exp{
+                .value=std::make_shared<BinaryExp>(BinaryExp{
+                .left=std::move(left.value()),
+                .op=op,
+                .right=std::move(right.value()),
+            }),
+            .pos=left->pos,
+        };
 
         token = get_token();
     }
@@ -128,7 +137,7 @@ std::expected<Expr, std::string> Parser::parse_add_exp() {
     return std::move(left.value());
 }
 
-std::expected<Expr, std::string> Parser::parse_mult_exp() {
+std::expected<Exp, std::string> Parser::parse_mult_exp() {
     auto left = parse_call_exp();
     if(!left) {
         return std::unexpected(left.error());
@@ -154,11 +163,14 @@ std::expected<Expr, std::string> Parser::parse_mult_exp() {
             return std::unexpected(right.error());
         }
 
-        left = std::make_shared<BinaryExp>(BinaryExp{
-            .left=std::move(left.value()),
-            .op=op,
-            .right=std::move(right.value()),
-        });
+        left = Exp{
+                .value=std::make_shared<BinaryExp>(BinaryExp{
+                .left=std::move(left.value()),
+                .op=op,
+                .right=std::move(right.value()),
+            }),
+            .pos=left->pos,
+        };
 
         token = get_token();
     }
@@ -166,7 +178,7 @@ std::expected<Expr, std::string> Parser::parse_mult_exp() {
     return std::move(left.value());
 }
 
-std::expected<Expr, std::string> Parser::parse_call_exp() {
+std::expected<Exp, std::string> Parser::parse_call_exp() {
     auto target = parse_prim_exp();
     if(!target) {
         return std::unexpected(target.error());
@@ -196,11 +208,14 @@ std::expected<Expr, std::string> Parser::parse_call_exp() {
         token = get_token_of(TokenType::RParenToken);
         cursor += 1;
 
-        target = std::make_shared<MethodCallExp>(MethodCallExp(
-            target.value(),
-            method_name->raw,
-            args.value()
-        ));
+        target = Exp{
+            .value=std::make_shared<MethodCallExp>(MethodCallExp(
+                target.value(),
+                method_name->raw,
+                args.value()
+            )),
+            .pos=target->pos,
+        };
 
         token = get_token_of(TokenType::DotToken);
     }
@@ -208,7 +223,7 @@ std::expected<Expr, std::string> Parser::parse_call_exp() {
     return std::move(target.value());
 }
 
-std::expected<Expr, std::string> Parser::parse_prim_exp() {
+std::expected<Exp, std::string> Parser::parse_prim_exp() {
     auto token = get_token();
     if(!token) {
         return std::unexpected(token.error());
@@ -235,17 +250,20 @@ std::expected<Expr, std::string> Parser::parse_prim_exp() {
     }
 }
 
-std::expected<VarExp, std::string> Parser::parse_var_exp() {
+std::expected<Exp, std::string> Parser::parse_var_exp() {
     auto token = get_token_of(TokenType::IdentToken);
     if(!token) {
         return std::unexpected(token.error());
     }
     cursor += 1;
 
-    return VarExp(token->raw);
+    return Exp{
+        .value=VarExp(token->raw),
+        .pos=std::move(token->pos),
+    };
 }
 
-std::expected<NumLitExp, std::string> Parser::parse_num_lit_exp() {
+std::expected<Exp, std::string> Parser::parse_num_lit_exp() {
     auto token = get_token_of(TokenType::NumberToken);
     if(!token) {
         return std::unexpected(token.error());
@@ -258,23 +276,29 @@ std::expected<NumLitExp, std::string> Parser::parse_num_lit_exp() {
         return std::unexpected(std::make_error_code(ec).message());
     }
 
-    return NumLitExp{
-        .val=val
+    return Exp{
+        .value=NumLitExp{
+            .val=val
+        },
+        .pos=token->pos,
     };
 }
 
-std::expected<StrLitExp, std::string> Parser::parse_str_lit_exp() {
+std::expected<Exp, std::string> Parser::parse_str_lit_exp() {
     auto token = get_token_of(TokenType::StringToken);
     if(!token) {
         return std::unexpected(token.error());
     }
     cursor += 1;
-    return StrLitExp{
-        .str = token->raw,
+    return Exp{
+        .value=StrLitExp{
+            .str = token->raw,
+        },
+        .pos=token->pos,
     };
 }
 
-std::expected<Expr, std::string> Parser::parse_paren_exp() {
+std::expected<Exp, std::string> Parser::parse_paren_exp() {
     auto token = get_token_of(TokenType::LParenToken);
     if(!token) {
         return std::unexpected(token.error());
@@ -295,16 +319,19 @@ std::expected<Expr, std::string> Parser::parse_paren_exp() {
     return std::move(expr.value());
 }
 
-std::expected<ThisExp, std::string> Parser::parse_this_exp() {
+std::expected<Exp, std::string> Parser::parse_this_exp() {
     auto token = get_token_of(TokenType::ThisToken);
     if(!token) {
         return std::unexpected(token.error());
     }
 
-    return ThisExp{};
+    return Exp{
+        .value=ThisExp{},
+        .pos=token->pos,
+    };
 }
 
-std::expected<BoolLitExp, std::string> Parser::parse_bool_lit_exp() {
+std::expected<Exp, std::string> Parser::parse_bool_lit_exp() {
     auto token = get_token();
     if(!token) {
         return std::unexpected(token.error());
@@ -323,14 +350,17 @@ std::expected<BoolLitExp, std::string> Parser::parse_bool_lit_exp() {
     }
     cursor += 1;
 
-    return BoolLitExp{
-        .val=val,
+    return Exp{
+        .value=BoolLitExp{
+            .val=val,
+        },
+        .pos=token->pos,
     };
 }
 
 std::expected<CommaExp, std::string> Parser::parse_comma_exp() {
     auto exp = parse_exp();
-    std::vector<Expr> exps;
+    std::vector<Exp> exps;
     if(!exp) {
         // assume empty CommaExp
         // if real error, higher up levels will fail and report error
@@ -359,14 +389,14 @@ std::expected<CommaExp, std::string> Parser::parse_comma_exp() {
     };
 }
 
-std::expected<std::shared_ptr<NewObjExp>, std::string> Parser::parse_new_obj_exp() {
-    auto token = get_token_of(TokenType::NewToken);
-    if(!token) {
-        return std::unexpected(token.error());
+std::expected<Exp, std::string> Parser::parse_new_obj_exp() {
+    auto new_token = get_token_of(TokenType::NewToken);
+    if(!new_token) {
+        return std::unexpected(new_token.error());
     }
     cursor += 1;
 
-    token = get_token_of(TokenType::IdentToken);
+    auto token = get_token_of(TokenType::IdentToken);
     if(!token) {
         return std::unexpected(token.error());
     }
@@ -390,10 +420,13 @@ std::expected<std::shared_ptr<NewObjExp>, std::string> Parser::parse_new_obj_exp
     }
     cursor += 1;
 
-    return std::make_shared<NewObjExp>(NewObjExp{
-        .class_name=class_name,
-        .args=std::move(args.value()),
-    });
+    return Exp{
+        .value=std::make_shared<NewObjExp>(NewObjExp{
+            .class_name=class_name,
+            .args=std::move(args.value()),
+        }),
+        .pos=new_token->pos,
+    };
 }
 
 

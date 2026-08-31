@@ -1,3 +1,4 @@
+#include "chava/class.hpp"
 #include <chava/parser.hpp>
 #include <expected>
 
@@ -7,7 +8,9 @@ std::expected<CommaVardec, std::string> Parser::parse_comma_vardec() {
     auto vardec = parse_vardec();
     if(!vardec) {
         return CommaVardec{
-            .vardecs=std::move(vardecs),
+            .value=CommaVardecValue{
+                .vardecs=std::move(vardecs),
+            }
         };
     }
 
@@ -25,14 +28,17 @@ std::expected<CommaVardec, std::string> Parser::parse_comma_vardec() {
     }
 
     return CommaVardec{
-        .vardecs=std::move(vardecs),
+        .value=CommaVardecValue{
+            .vardecs=std::move(vardecs),
+        },
+        .pos=vardec->pos,
     };
 }
 
 std::expected<MethodDef, std::string> Parser::parse_method_def() {
-    auto token = get_token_of(TokenType::MethodToken);
-    if(!token) {
-        return std::unexpected(token.error());
+    auto method_token = get_token_of(TokenType::MethodToken);
+    if(!method_token) {
+        return std::unexpected(method_token.error());
     }
     cursor += 1;
 
@@ -42,7 +48,7 @@ std::expected<MethodDef, std::string> Parser::parse_method_def() {
     }
     cursor += 1;
 
-    token = get_token_of(TokenType::LParenToken);
+    auto token = get_token_of(TokenType::LParenToken);
     if(!token) {
         return std::unexpected(token.error());
     }
@@ -70,21 +76,24 @@ std::expected<MethodDef, std::string> Parser::parse_method_def() {
     }
 
     return MethodDef{
-        .method_name=method_name->raw,
-        .params=std::move(params.value()),
-        .ret_type=std::move(ret_type.value()),
-        .body=std::move(body).value(),
+        .value=MethodDefValue{
+            .method_name=method_name->raw,
+            .params=std::move(params.value()),
+            .ret_type=std::move(ret_type.value()),
+            .body=std::move(body).value().to<BlockStmt>(),
+        },
+        .pos=method_token->pos,
     };
 }
 
 std::expected<Constructor, std::string> Parser::parse_constructor() {
-    auto token = get_token_of(TokenType::InitToken);
-    if(!token) {
-        return std::unexpected(token.error());
+    auto init_token = get_token_of(TokenType::InitToken);
+    if(!init_token) {
+        return std::unexpected(init_token.error());
     }
     cursor += 1;
 
-    token = get_token_of(TokenType::LParenToken);
+    auto token = get_token_of(TokenType::LParenToken);
     if(!token) {
         return std::unexpected(token.error());
     }
@@ -152,16 +161,19 @@ std::expected<Constructor, std::string> Parser::parse_constructor() {
     cursor += 1;
 
     return Constructor{
-        .params=std::move(params.value()),
-        .super_args=std::move(super_args),
-        .stmts=std::move(stmts),
+        .value=ConstructorValue{
+            .params=std::move(params.value()),
+            .super_args=std::move(super_args),
+            .stmts=std::move(stmts),
+        },
+        .pos=init_token->pos,
     };
 }
 
 std::expected<ClassDef, std::string> Parser::parse_classdef() {
-    auto token = get_token_of(TokenType::ClassToken);
-    if(!token) {
-        return std::unexpected(token.error());
+    auto class_token = get_token_of(TokenType::ClassToken);
+    if(!class_token) {
+        return std::unexpected(class_token.error());
     }
     cursor += 1;
 
@@ -172,7 +184,7 @@ std::expected<ClassDef, std::string> Parser::parse_classdef() {
     cursor += 1;
 
     std::optional<std::string_view> extend_class_name = std::nullopt;
-    token = get_token_of(TokenType::ExtendsToken);
+    auto token = get_token_of(TokenType::ExtendsToken);
     if(token) {
         cursor += 1;
 
@@ -191,7 +203,7 @@ std::expected<ClassDef, std::string> Parser::parse_classdef() {
     }
     cursor += 1;
 
-    std::vector<VardecStmt> vardecs;
+    std::vector<PositionWrapper<VardecStmt>> vardecs;
     token = get_token();
     while(token && token->type != TokenType::InitToken) {
         auto vardec = parse_vardec_stmt();
@@ -199,7 +211,7 @@ std::expected<ClassDef, std::string> Parser::parse_classdef() {
             return std::unexpected(vardec.error());
         }
 
-        vardecs.push_back(std::move(vardec.value()));
+        vardecs.push_back(std::move(vardec->to<VardecStmt>()));
 
         token = get_token();
     }
@@ -226,10 +238,13 @@ std::expected<ClassDef, std::string> Parser::parse_classdef() {
     cursor += 1;
 
     return ClassDef{
-        .class_name=class_name->raw,
-        .extend_class_name=extend_class_name,
-        .vardecs=std::move(vardecs),
-        .constructor=std::move(constructor.value()),
-        .method_defs=std::move(method_defs),
+        .value=ClassDefValue{
+            .class_name=class_name->raw,
+            .extend_class_name=extend_class_name,
+            .vardecs=std::move(vardecs),
+            .constructor=std::move(constructor.value()),
+            .method_defs=std::move(method_defs),
+        },
+        .pos=class_token->pos,
     };
 }

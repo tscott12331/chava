@@ -18,7 +18,7 @@ struct ReturnStmt;
 struct IfStmt;
 struct BlockStmt;
 
-using Stmt = std::variant<
+using StmtVariant = std::variant<
     ExpStmt,
     VardecStmt,
     AssignStmt,
@@ -29,8 +29,10 @@ using Stmt = std::variant<
     std::shared_ptr<BlockStmt>
 >;
 
+using Stmt = PositionWrapper<StmtVariant>;
+
 struct ExpStmt {
-    Expr exp;
+    Exp exp;
 };
 
 struct VardecStmt {
@@ -39,22 +41,22 @@ struct VardecStmt {
 
 struct AssignStmt {
     std::string_view var;
-    Expr val;
+    Exp val;
 };
 
 struct WhileStmt {
-    Expr guard;
+    Exp guard;
     Stmt body;
 };
 
 struct BreakStmt {};
 
 struct ReturnStmt {
-    std::optional<Expr> val;
+    std::optional<Exp> val;
 };
 
 struct IfStmt {
-    Expr guard;
+    Exp guard;
     Stmt body;
     std::optional<Stmt> else_body;
 };

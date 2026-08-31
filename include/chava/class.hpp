@@ -8,29 +8,37 @@
 #include <string_view>
 #include <vector>
 
-struct CommaVardec {
+struct CommaVardecValue {
     std::vector<Vardec> vardecs;
 };
 
-struct MethodDef {
+using CommaVardec = PositionWrapper<CommaVardecValue>;
+
+struct MethodDefValue {
     std::string_view method_name;
     CommaVardec params;
     ParsedType ret_type;
-    std::shared_ptr<BlockStmt> body;
+    PositionWrapper<BlockStmt> body;
 };
 
-struct Constructor {
+using MethodDef = PositionWrapper<MethodDefValue>;
+
+struct ConstructorValue {
     CommaVardec params;
     std::optional<CommaExp> super_args;
     std::vector<Stmt> stmts;
 };
 
-struct ClassDef {
+using Constructor = PositionWrapper<ConstructorValue>;
+
+struct ClassDefValue {
     std::string_view class_name;
     std::optional<std::string_view> extend_class_name;
-    std::vector<VardecStmt> vardecs;
+    std::vector<PositionWrapper<VardecStmt>> vardecs;
     Constructor constructor;
     std::vector<MethodDef> method_defs;
 };
+
+using ClassDef = PositionWrapper<ClassDefValue>;
 
 #endif
