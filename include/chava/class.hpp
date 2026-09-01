@@ -18,7 +18,7 @@ struct MethodDefValue {
     std::string_view method_name;
     CommaVardec params;
     ParsedType ret_type;
-    PositionWrapper<BlockStmt> body;
+    PositionWrapper<std::shared_ptr<BlockStmt>> body;
 };
 
 using MethodDef = PositionWrapper<MethodDefValue>;

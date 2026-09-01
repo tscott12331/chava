@@ -16,11 +16,12 @@ std::expected<void, std::string> Scope::define(const std::string& var_name, std:
     return {}; 
 }
 
-std::expected<void, std::string> Scope::define(const Vardec& vardec) {
+std::expected<void, std::string> Scope::define(const Vardec& vardec, TypeMap& type_map) {
     const auto var_name = std::string(vardec.value.var);
-    const auto type = get_var_type(var_name, vardec.pos);
+    const auto type_name = to_string(vardec.value.type);
+    const auto type = type_map.get_type(type_name);
     if(!type) {
-        return std::unexpected(type.error());
+        return std::unexpected(create_error(vardec, std::format("Type {} does not exist", type_name)));
     }
 
     return define(var_name, type.value(), vardec.pos);

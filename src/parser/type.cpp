@@ -1,13 +1,8 @@
-#include "chava/common.hpp"
 #include <chava/parser.hpp>
 #include <expected>
 #include <format>
 #include <stdexcept>
 #include <variant>
-
-const std::string INT_NAME = "int";
-const std::string BOOL_NAME = "bool";
-const std::string VOID_NAME = "void";
 
 std::expected<ParsedType, std::string> Parser::parse_type() {
     auto type_token = get_token();

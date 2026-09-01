@@ -80,7 +80,7 @@ std::expected<MethodDef, std::string> Parser::parse_method_def() {
             .method_name=method_name->raw,
             .params=std::move(params.value()),
             .ret_type=std::move(ret_type.value()),
-            .body=std::move(body).value().to<BlockStmt>(),
+            .body=std::move(body).value().to<std::shared_ptr<BlockStmt>>(),
         },
         .pos=method_token->pos,
     };

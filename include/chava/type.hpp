@@ -1,9 +1,14 @@
 #ifndef TYPE_HPP
 #define TYPE_HPP
 
+#define INT_NAME "int"
+#define BOOL_NAME "bool"
+#define VOID_NAME "void"
+
 #include <chava/parser_misc.hpp>
 #include <string_view>
 #include <variant>
+
 enum class ParsedPrimitiveType {
     Int,
     Bool,

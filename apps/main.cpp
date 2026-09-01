@@ -1,8 +1,8 @@
-#include "chava/typechecker.hpp"
 #include <format>
 #include <iostream>
 #include <chava/tokenizer.hpp>
 #include <chava/parser.hpp>
+#include <chava/typechecker.hpp>
 #include <ranges>
 #include <string_view>
 

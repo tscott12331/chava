@@ -1,6 +1,3 @@
-#include "chava/class.hpp"
-#include <chava/type.hpp>
-#include <chava/stmt.hpp>
 #include <chava/typechecker.hpp>
 #include <expected>
 #include <format>
@@ -12,32 +9,28 @@ bool types_equal(const std::shared_ptr<Type> left, const std::shared_ptr<Type> r
     return *left == *right;
 }
 
-template<typename T>
-std::string create_error(PositionWrapper<T> node, std::string_view message) {
-    return create_error(node.pos, message);
-}
-
 std::string create_error(const Position& pos, std::string_view message) {
     return std::format("[{}:{}]: {}", pos.line, pos.col, message);
 }
 
-std::vector<std::shared_ptr<Type>> built_ins = {
-    std::make_shared<PrimitiveType>(PrimitiveType("int")),
-    std::make_shared<PrimitiveType>(PrimitiveType("bool")),
-    std::make_shared<PrimitiveType>(PrimitiveType("void")),
-
-    // TODO: add built in classes (Object, String)
-};
-
-const ClassDef ObjectClass = ClassDef{};
-const ClassDef StringClass = ClassDef{};
+const ClassDef ObjectClass = ClassDef{.value=ClassDefValue{.class_name="Object"}};
+const ClassDef StringClass = ClassDef{.value=ClassDefValue{.class_name="String"}};
 
 const std::shared_ptr<ClassType> TypeChecker::bi_object = std::make_shared<ClassType>(ObjectClass);
 const std::shared_ptr<ClassType> TypeChecker::bi_string = std::make_shared<ClassType>(StringClass);
 
-const std::shared_ptr<PrimitiveType> TypeChecker::pr_int = std::make_shared<PrimitiveType>(PrimitiveType("int"));
-const std::shared_ptr<PrimitiveType> TypeChecker::pr_bool = std::make_shared<PrimitiveType>(PrimitiveType("bool"));
-const std::shared_ptr<PrimitiveType> TypeChecker::pr_void = std::make_shared<PrimitiveType>(PrimitiveType("void"));
+const std::shared_ptr<PrimitiveType> TypeChecker::pr_int = std::make_shared<PrimitiveType>(PrimitiveType(INT_NAME));
+const std::shared_ptr<PrimitiveType> TypeChecker::pr_bool = std::make_shared<PrimitiveType>(PrimitiveType(BOOL_NAME));
+const std::shared_ptr<PrimitiveType> TypeChecker::pr_void = std::make_shared<PrimitiveType>(PrimitiveType(VOID_NAME));
+
+std::vector<std::shared_ptr<Type>> built_ins = {
+    TypeChecker::pr_int,
+    TypeChecker::pr_bool,
+    TypeChecker::pr_void,
+
+    TypeChecker::bi_string,
+    TypeChecker::bi_object,
+};
 
 PrimitiveType::PrimitiveType(std::string name) : Type(name) {}
 
@@ -81,11 +74,11 @@ std::expected<void, std::string> TypeChecker::check_stmt(const Stmt& stmt) {
         [this](const ExpStmt& stmt) -> std::expected<void, std::string> { return check_exp(stmt.exp); },
         [this, stmt](const VardecStmt&) -> std::expected<void, std::string> { return check_vardec_stmt(stmt.to<VardecStmt>()); },
         [this, stmt](const AssignStmt&) -> std::expected<void, std::string> { return check_assign_stmt(stmt.to<AssignStmt>()); },
-        [this, stmt](const std::shared_ptr<WhileStmt>&) -> std::expected<void, std::string> { return check_while_stmt(stmt.to<WhileStmt>()); },
+        [this, stmt](const std::shared_ptr<WhileStmt>&) -> std::expected<void, std::string> { return check_while_stmt(stmt.to<std::shared_ptr<WhileStmt>>()); },
         [this](const std::shared_ptr<BreakStmt>&) -> std::expected<void, std::string> { return {}; },
-        [this, stmt](const std::shared_ptr<ReturnStmt>&) -> std::expected<void, std::string> { return check_return_stmt(stmt.to<ReturnStmt>()); },
-        [this, stmt](const std::shared_ptr<IfStmt>&) -> std::expected<void, std::string> { return check_if_stmt(stmt.to<IfStmt>()); },
-        [this, stmt](const std::shared_ptr<BlockStmt>&) -> std::expected<void, std::string> { return check_block_stmt(stmt.to<BlockStmt>()); },
+        [this, stmt](const std::shared_ptr<ReturnStmt>&) -> std::expected<void, std::string> { return check_return_stmt(stmt.to<std::shared_ptr<ReturnStmt>>()); },
+        [this, stmt](const std::shared_ptr<IfStmt>&) -> std::expected<void, std::string> { return check_if_stmt(stmt.to<std::shared_ptr<IfStmt>>()); },
+        [this, stmt](const std::shared_ptr<BlockStmt>&) -> std::expected<void, std::string> { return check_block_stmt(stmt.to<std::shared_ptr<BlockStmt>>()); },
     }, stmt.value);
 
     if(!res) {
@@ -103,12 +96,12 @@ std::expected<void, std::string> TypeChecker::check_exp(const Exp& exp) {
     return {};
 }
 
-std::expected<void, std::string> TypeChecker::check_while_stmt(const PositionWrapper<WhileStmt>& stmt) {
-    if(auto guard = check_guard(stmt.value.guard); !guard) {
+std::expected<void, std::string> TypeChecker::check_while_stmt(const PositionWrapper<std::shared_ptr<WhileStmt>>& stmt) {
+    if(auto guard = check_guard(stmt.value->guard); !guard) {
         return std::unexpected(guard.error());
     }
 
-    if(auto body_res = check_stmt(stmt.value.body); !body_res) {
+    if(auto body_res = check_stmt(stmt.value->body); !body_res) {
         return std::unexpected(body_res.error());
     }
 
@@ -120,36 +113,16 @@ std::expected<void, std::string> TypeChecker::check_vardec_stmt(const PositionWr
 }
 
 std::expected<void, std::string> TypeChecker::check_vardec(const Vardec& vardec) {
-    auto type = std::visit(overloaded {
-        [this, vardec](ParsedPrimitiveType type) -> std::expected<std::shared_ptr<Type>, std::string> {
-            switch(type) {
-                case ParsedPrimitiveType::Int:
-                case ParsedPrimitiveType::Bool:
-                case ParsedPrimitiveType::Void:
-                    if(auto t = type_map.get_type(to_string(type))) {
-                        return t.value();
-                    }
-                    return std::unexpected(create_error(vardec.value.type, "Unhandled type in vardec"));
-                default:
-                    return std::unexpected(create_error(vardec.value.type, "Unhandled primitive type in vardec"));
-            }
-        },
-        [this, vardec](ParsedClassType class_type) -> std::expected<std::shared_ptr<Type>, std::string> {
-            return type_map.get_type(std::string(class_type.class_name))
-                .transform(
-                    [](std::shared_ptr<Type> t) -> std::expected<std::shared_ptr<Type>, std::string> 
-                    {
-                        return t;
-                    })
-                .value_or(std::unexpected(create_error(vardec.value.type, "Invalid type in vardec")));
-        },
-    }, vardec.value.type.value);
-
-    if(!type) {
-        return std::unexpected(type.error());
+    auto type_name = to_string(vardec.value.type);
+    auto t = type_map.get_type(type_name);
+    if(!t) {
+        return std::unexpected(create_error(vardec, std::format("Unknown type {} in vardec", type_name)));
+    }
+    if(types_equal(t.value(), TypeChecker::pr_void)) {
+        return std::unexpected(create_error(vardec, std::format("Cannot declare a variable of type {}", TypeChecker::pr_void->get_name())));
     }
 
-    return scope.define(vardec);
+    return scope.define(vardec, type_map);
 }
 
 std::expected<void, std::string> TypeChecker::check_assign_stmt(const PositionWrapper<AssignStmt>& stmt) {
@@ -172,25 +145,25 @@ std::expected<void, std::string> TypeChecker::check_assign_stmt(const PositionWr
     return {};
 }
 
-std::expected<void, std::string> TypeChecker::check_if_stmt(const PositionWrapper<IfStmt>& stmt) {
-    if(auto guard_res = check_guard(stmt.value.guard); !guard_res) {
+std::expected<void, std::string> TypeChecker::check_if_stmt(const PositionWrapper<std::shared_ptr<IfStmt>>& stmt) {
+    if(auto guard_res = check_guard(stmt.value->guard); !guard_res) {
         return std::unexpected(guard_res.error());
     }
 
-    if(auto body_res = check_stmt(stmt.value.body); !body_res) {
+    if(auto body_res = check_stmt(stmt.value->body); !body_res) {
         return std::unexpected(body_res.error());
     }
 
-    if(stmt.value.else_body) {
-        return check_stmt(stmt.value.else_body.value());
+    if(stmt.value->else_body) {
+        return check_stmt(stmt.value->else_body.value());
     }
 
     return {};
 }
 
-std::expected<void, std::string> TypeChecker::check_block_stmt(const PositionWrapper<BlockStmt>& stmt) {
+std::expected<void, std::string> TypeChecker::check_block_stmt(const PositionWrapper<std::shared_ptr<BlockStmt>>& stmt) {
     scope = Scope(scope);
-    for(auto s : stmt.value.stmts) {
+    for(auto s : stmt.value->stmts) {
         if(auto stmt_res = check_stmt(s); !stmt_res) {
             return std::unexpected(stmt_res.error());
         }
@@ -199,7 +172,7 @@ std::expected<void, std::string> TypeChecker::check_block_stmt(const PositionWra
     return {};
 }
 
-std::expected<void, std::string> TypeChecker::check_return_stmt(const PositionWrapper<ReturnStmt>& stmt) {
+std::expected<void, std::string> TypeChecker::check_return_stmt(const PositionWrapper<std::shared_ptr<ReturnStmt>>& stmt) {
     return std::unexpected("not implemented");
 }
 
@@ -223,9 +196,9 @@ std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_exp_type(
         [](const NumLitExp& exp) -> std::expected<std::shared_ptr<Type>, std::string> { return TypeChecker::pr_int; },
         [](const BoolLitExp& exp) -> std::expected<std::shared_ptr<Type>, std::string> { return TypeChecker::pr_bool; },
         [this, exp](const ThisExp&) -> std::expected<std::shared_ptr<Type>, std::string> { return resolve_this_exp(exp.to<ThisExp>()); },
-        [this, exp](const std::shared_ptr<NewObjExp>&) -> std::expected<std::shared_ptr<Type>, std::string> { return resolve_new_obj_exp(exp.to<NewObjExp>()); },
-        [this, exp](const std::shared_ptr<MethodCallExp>&) -> std::expected<std::shared_ptr<Type>, std::string> { return resolve_method_call_exp(exp.to<MethodCallExp>()); },
-        [this, exp](const std::shared_ptr<BinaryExp>&) -> std::expected<std::shared_ptr<Type>, std::string> { return resolve_binary_exp(exp.to<BinaryExp>()); },
+        [this, exp](const std::shared_ptr<NewObjExp>&) -> std::expected<std::shared_ptr<Type>, std::string> { return resolve_new_obj_exp(exp.to<std::shared_ptr<NewObjExp>>()); },
+        [this, exp](const std::shared_ptr<MethodCallExp>&) -> std::expected<std::shared_ptr<Type>, std::string> { return resolve_method_call_exp(exp.to<std::shared_ptr<MethodCallExp>>()); },
+        [this, exp](const std::shared_ptr<BinaryExp>&) -> std::expected<std::shared_ptr<Type>, std::string> { return resolve_binary_exp(exp.to<std::shared_ptr<BinaryExp>>()); },
     }, exp.value);
 }
 
@@ -237,10 +210,10 @@ std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_this_exp(
     return scope.get_this(exp);
 }
 
-std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_new_obj_exp(const PositionWrapper<NewObjExp>& exp) {
-    auto obj_type = type_map.get_type(std::string(exp.value.class_name));
+std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_new_obj_exp(const PositionWrapper<std::shared_ptr<NewObjExp>>& exp) {
+    auto obj_type = type_map.get_type(std::string(exp.value->class_name));
     if(!obj_type.has_value()) {
-        return std::unexpected(create_error(exp, std::format("New object class {} doesn't exist", exp.value.class_name)));
+        return std::unexpected(create_error(exp, std::format("New object class {} doesn't exist", exp.value->class_name)));
     }
 
     // TODO: check constructor
@@ -249,36 +222,36 @@ std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_new_obj_e
     // return obj_type.value();
 }
 
-std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_method_call_exp(const PositionWrapper<MethodCallExp>& exp) {
+std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_method_call_exp(const PositionWrapper<std::shared_ptr<MethodCallExp>>& exp) {
     return std::unexpected("not implemented");
 }
 
-std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_binary_exp(const PositionWrapper<BinaryExp>& exp) {
-    auto left = resolve_exp_type(exp.value.left);
+std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_binary_exp(const PositionWrapper<std::shared_ptr<BinaryExp>>& exp) {
+    auto left = resolve_exp_type(exp.value->left);
     if(!left) {
         return std::unexpected(left.error());
     }
-    auto right = resolve_exp_type(exp.value.right);
+    auto right = resolve_exp_type(exp.value->right);
     if(!right) {
         return std::unexpected(right.error());
     }
 
-    switch(exp.value.op) {
+    switch(exp.value->op) {
         case Op::Add:
         case Op::Sub:
-            return resolve_add_exp(left.value(), exp.value.op, right.value())
+            return resolve_add_exp(left.value(), exp.value->op, right.value())
                 .transform_error([exp](std::string err) { return create_error(exp, err); });
         case Op::Mult:
         case Op::Div:
-            return resolve_mult_exp(left.value(), exp.value.op, right.value())
+            return resolve_mult_exp(left.value(), exp.value->op, right.value())
                 .transform_error([exp](std::string err) { return create_error(exp, err); });
         case Op::Lt:
         case Op::Gt:
-            return resolve_comp_exp(left.value(), exp.value.op, right.value())
+            return resolve_comp_exp(left.value(), exp.value->op, right.value())
                 .transform_error([exp](std::string err) { return create_error(exp, err); });
         case Op::Eq:
         case Op::NotEq:
-            return resolve_eq_exp(left.value(), exp.value.op, right.value())
+            return resolve_eq_exp(left.value(), exp.value->op, right.value())
                 .transform_error([exp](std::string err) { return create_error(exp, err); });
         default:
             return std::unexpected(create_error(exp, "Unhandled operator"));

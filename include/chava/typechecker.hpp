@@ -1,10 +1,8 @@
 #ifndef TYPECHECKER_HPP
 #define TYPECHECKER_HPP
 
-#include "chava/stmt.hpp"
 #include <chava/parser.hpp>
 #include <expected>
-#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -47,6 +45,14 @@ bool types_equal(const std::shared_ptr<Type> left, const std::shared_ptr<Type> r
 bool is_int(std::shared_ptr<Type> type);
 bool is_bool(std::shared_ptr<Type> type);
 bool is_void(std::shared_ptr<Type> type);
+
+std::string create_error(const Position& pos, std::string_view message);
+
+template<typename T>
+std::string create_error(const PositionWrapper<T>& node, std::string_view message) {
+    return create_error(node.pos, message);
+}
+
 
 class MethodSignature {
 public:
@@ -92,7 +98,7 @@ public:
     Scope();
     Scope(std::shared_ptr<Scope> parent);
     std::expected<void, std::string> define(const std::string& var_name, std::shared_ptr<Type> type, const Position& pos);
-    std::expected<void, std::string> define(const Vardec& vardec);
+    std::expected<void, std::string> define(const Vardec& vardec, TypeMap& type_map);
     std::expected<std::shared_ptr<Type>, std::string> get_var_type(std::string& var_name, const Position& pos);
     std::expected<std::shared_ptr<Type>, std::string> get_var_type(std::string_view var_name, const Position &pos);
 
@@ -125,30 +131,26 @@ private:
     std::expected<void, std::string> check_stmt(const PositionWrapper<StmtVariant>& stmt);
     std::expected<void, std::string> check_exp(const Exp& exp);
 
-    std::expected<void, std::string> check_while_stmt(const PositionWrapper<WhileStmt>& stmt);
+    std::expected<void, std::string> check_while_stmt(const PositionWrapper<std::shared_ptr<WhileStmt>>& stmt);
     std::expected<void, std::string> check_vardec_stmt(const PositionWrapper<VardecStmt>& stmt);
     std::expected<void, std::string> check_vardec(const Vardec& vardec);
     std::expected<void, std::string> check_assign_stmt(const PositionWrapper<AssignStmt>& stmt);
-    std::expected<void, std::string> check_if_stmt(const PositionWrapper<IfStmt>& stmt);
-    std::expected<void, std::string> check_block_stmt(const PositionWrapper<BlockStmt>& stmt);
-    std::expected<void, std::string> check_return_stmt(const PositionWrapper<ReturnStmt>& stmt);
+    std::expected<void, std::string> check_if_stmt(const PositionWrapper<std::shared_ptr<IfStmt>>& stmt);
+    std::expected<void, std::string> check_block_stmt(const PositionWrapper<std::shared_ptr<BlockStmt>>& stmt);
+    std::expected<void, std::string> check_return_stmt(const PositionWrapper<std::shared_ptr<ReturnStmt>>& stmt);
 
     std::expected<void, std::string> check_guard(const Exp& guard);
 
     std::expected<std::shared_ptr<Type>, std::string> resolve_exp_type(const Exp& exp);
     std::expected<std::shared_ptr<Type>, std::string> resolve_var_exp(const PositionWrapper<VarExp>& exp);
     std::expected<std::shared_ptr<Type>, std::string> resolve_this_exp(const PositionWrapper<ThisExp>& exp);
-    std::expected<std::shared_ptr<Type>, std::string> resolve_new_obj_exp(const PositionWrapper<NewObjExp>& exp);
-    std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_exp(const PositionWrapper<MethodCallExp>& exp);
-    std::expected<std::shared_ptr<Type>, std::string> resolve_binary_exp(const PositionWrapper<BinaryExp>& exp);
+    std::expected<std::shared_ptr<Type>, std::string> resolve_new_obj_exp(const PositionWrapper<std::shared_ptr<NewObjExp>>& exp);
+    std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_exp(const PositionWrapper<std::shared_ptr<MethodCallExp>>& exp);
+    std::expected<std::shared_ptr<Type>, std::string> resolve_binary_exp(const PositionWrapper<std::shared_ptr<BinaryExp>>& exp);
     std::expected<std::shared_ptr<Type>, std::string> resolve_add_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);
     std::expected<std::shared_ptr<Type>, std::string> resolve_mult_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);
     std::expected<std::shared_ptr<Type>, std::string> resolve_comp_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);
     std::expected<std::shared_ptr<Type>, std::string> resolve_eq_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);
 };
-
-template<typename T>
-std::string create_error(const PositionWrapper<T> node, std::string_view message);
-std::string create_error(const Position& pos, std::string_view message);
 
 #endif

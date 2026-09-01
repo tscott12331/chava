@@ -1,4 +1,3 @@
-#include "chava/type.hpp"
 #include <chava/typechecker.hpp>
 #include <format>
 

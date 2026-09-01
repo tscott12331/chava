@@ -8,6 +8,7 @@ add_library(chava_lib
     typechecker/typechecker.cpp
     typechecker/scope.cpp
     typechecker/typemap.cpp
+    typechecker/classtype.cpp
 )
 
 target_include_directories(chava_lib PUBLIC
