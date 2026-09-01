@@ -2,7 +2,7 @@
 #include <chava/typechecker.hpp>
 #include <format>
 
-ClassType::ClassType(ClassDef& classdef) : Type(std::string(classdef.value.class_name)), 
+ClassType::ClassType(const ClassDef& classdef) : Type(std::string(classdef.value.class_name)), 
                                            classdef(classdef) {}
 
 bool ClassType::is_subtype_of(std::shared_ptr<Type> other) {
@@ -30,13 +30,13 @@ std::expected<void, std::string> ClassType::populate(TypeMap& type_map) {
         const auto& extend_class_name = std::string(classdef.value.extend_class_name.value());
         auto parent_type = type_map.get_type(extend_class_name);
         if(!parent_type) {
-            return std::unexpected(std::format("Extending type {} does not exist", extend_class_name));
+            return std::unexpected(create_error(classdef, std::format("Extending type {} does not exist", extend_class_name)));
         }
 
         if(auto pres = std::dynamic_pointer_cast<PrimitiveType>(parent_type.value()); pres) {
-            return std::unexpected(std::format("Class {} cannot extend primitive type {}",
+            return std::unexpected(create_error(classdef, std::format("Class {} cannot extend primitive type {}",
                                                classdef.value.class_name,
-                                               pres->get_name()));
+                                               pres->get_name())));
         }
     }
 
@@ -52,15 +52,15 @@ std::expected<void, std::string> ClassType::populate_fields(TypeMap& type_map) {
         const auto& vardec = vardec_stmt.value.vardec.value;
         const auto& field_name = std::string(vardec.var);
         if(has_field(field_name)) {
-            return std::unexpected(std::format("Redeclaration of field {} in class {}",
+            return std::unexpected(create_error(vardec_stmt, std::format("Redeclaration of field {} in class {}",
                                                field_name,
-                                               classdef.value.class_name));
+                                               classdef.value.class_name)));
         }
 
         const auto& type_name = to_string(vardec.type);
         const auto& type = type_map.get_type(type_name);
         if(!type) {
-            return std::unexpected(std::format("Type {} doesn't exist", type_name));
+            return std::unexpected(create_error(vardec.type, std::format("Type {} doesn't exist", type_name)));
         }
 
         fields[field_name] = type.value();

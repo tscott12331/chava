@@ -70,14 +70,20 @@ std::expected<Vardec, std::string> Parser::parse_vardec() {
 
 std::string to_string(const ParsedType& parsed_type) {
     return std::visit(overloaded {
-        [](const ParsedPrimitiveType& prm) -> std::string {
-            switch(prm) {
-                case ParsedPrimitiveType::Int: return INT_NAME;
-                case ParsedPrimitiveType::Bool: return BOOL_NAME;
-                case ParsedPrimitiveType::Void: return VOID_NAME;
-                default: throw std::logic_error("Unhandled primitive to_string type");
-            }
-        },
-        [](const ParsedClassType& cls) -> std::string { return std::string(cls.class_name); },
+        [](const ParsedPrimitiveType& prm) -> std::string { return to_string(prm); },
+        [](const ParsedClassType& cls) -> std::string { return to_string(cls); },
     }, parsed_type.value);
+}
+
+std::string to_string(const ParsedPrimitiveType& parsed_type) {
+    switch(parsed_type) {
+        case ParsedPrimitiveType::Int: return INT_NAME;
+        case ParsedPrimitiveType::Bool: return BOOL_NAME;
+        case ParsedPrimitiveType::Void: return VOID_NAME;
+        default: throw std::logic_error("Unhandled primitive to_string type");
+    }
+}
+
+std::string to_string(const ParsedClassType& parsed_type) {
+    return std::string(parsed_type.class_name);
 }

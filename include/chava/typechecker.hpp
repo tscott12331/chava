@@ -1,10 +1,10 @@
 #ifndef TYPECHECKER_HPP
 #define TYPECHECKER_HPP
 
-#include "chava/parser_misc.hpp"
 #include "chava/stmt.hpp"
 #include <chava/parser.hpp>
 #include <expected>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -68,7 +68,7 @@ public:
 class ClassType : public Type {
     // TODO: implement constructor
 public:
-    ClassType(ClassDef& classdef);
+    ClassType(const ClassDef& classdef);
     std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_ret(MethodCallExp& method_call) override;
     bool is_subtype_of(std::shared_ptr<Type> other) override;
 
@@ -83,7 +83,7 @@ private:
     std::unordered_map<std::string, std::shared_ptr<Type>> fields;
     std::unordered_map<std::string, MethodSignature> methods;
 
-    ClassDef& classdef;
+    const ClassDef& classdef;
     bool is_populated = false;
 };
 
@@ -144,5 +144,10 @@ private:
     std::expected<std::shared_ptr<Type>, std::string> resolve_comp_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);
     std::expected<std::shared_ptr<Type>, std::string> resolve_eq_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);
 };
+
+template<typename T>
+std::string create_error(PositionWrapper<T> node, std::string_view message) {
+    return std::format("[{}:{}]: {}", node.pos.line, node.pos.col, message);
+}
 
 #endif

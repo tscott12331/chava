@@ -22,6 +22,8 @@ using ParsedTypeVariant = std::variant<
 using ParsedType = PositionWrapper<ParsedTypeVariant>;
 
 std::string to_string(const ParsedType& parsed_type);
+std::string to_string(const ParsedPrimitiveType& parsed_type);
+std::string to_string(const ParsedClassType& parsed_type);
 
 struct VardecValue {
     ParsedType type;

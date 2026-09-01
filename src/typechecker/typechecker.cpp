@@ -1,3 +1,4 @@
+#include "chava/class.hpp"
 #include <chava/type.hpp>
 #include <chava/stmt.hpp>
 #include <chava/typechecker.hpp>
@@ -19,8 +20,11 @@ std::vector<std::shared_ptr<Type>> built_ins = {
     // TODO: add built in classes (Object, String)
 };
 
-const std::shared_ptr<ClassType> TypeChecker::bi_object = std::make_shared<ClassType>(ClassType("Object"));
-const std::shared_ptr<ClassType> TypeChecker::bi_string = std::make_shared<ClassType>(ClassType("String"));
+const ClassDef ObjectClass = ClassDef{};
+const ClassDef StringClass = ClassDef{};
+
+const std::shared_ptr<ClassType> TypeChecker::bi_object = std::make_shared<ClassType>(ObjectClass);
+const std::shared_ptr<ClassType> TypeChecker::bi_string = std::make_shared<ClassType>(StringClass);
 
 const std::shared_ptr<PrimitiveType> TypeChecker::pr_int = std::make_shared<PrimitiveType>(PrimitiveType("int"));
 const std::shared_ptr<PrimitiveType> TypeChecker::pr_bool = std::make_shared<PrimitiveType>(PrimitiveType("bool"));
@@ -104,35 +108,27 @@ std::expected<void, std::string> TypeChecker::check_while_stmt(const PositionWra
 
 std::expected<void, std::string> TypeChecker::check_vardec_stmt(const PositionWrapper<VardecStmt>& stmt) {
     auto type = std::visit(overloaded {
-        [this](ParsedPrimitiveType type) -> std::expected<std::shared_ptr<Type>, std::string> {
+        [this, stmt](ParsedPrimitiveType type) -> std::expected<std::shared_ptr<Type>, std::string> {
             switch(type) {
                 case ParsedPrimitiveType::Int:
-                    if(auto t = type_map.get_type(INT_NAME)) {
-                        return t.value();
-                    }
-                    return std::unexpected("Invalid type in vardec");
                 case ParsedPrimitiveType::Bool:
-                    if(auto t = type_map.get_type(BOOl_NAME)) {
-                        return t.value();
-                    }
-                    return std::unexpected("Invalid type in vardec");
                 case ParsedPrimitiveType::Void:
-                    if(auto t = type_map.get_type(VOID_NAME)) {
+                    if(auto t = type_map.get_type(to_string(type))) {
                         return t.value();
                     }
-                    return std::unexpected("Invalid type in vardec");
+                    return std::unexpected(create_error(stmt.value.vardec.value.type, "Unhandled type in vardec"));
                 default:
-                    return std::unexpected("Unhandled primitive type in vardec");
+                    return std::unexpected(create_error(stmt.value.vardec.value.type, "Unhandled primitive type in vardec"));
             }
         },
-        [this](ParsedClassType class_type) -> std::expected<std::shared_ptr<Type>, std::string> {
+        [this, stmt](ParsedClassType class_type) -> std::expected<std::shared_ptr<Type>, std::string> {
             return type_map.get_type(std::string(class_type.class_name))
                 .transform(
                     [](std::shared_ptr<Type> t) -> std::expected<std::shared_ptr<Type>, std::string> 
                     {
                         return t;
                     })
-                .value_or(std::unexpected("Invalid type in vardec"));
+                .value_or(std::unexpected(create_error(stmt.value.vardec.value.type, "Invalid type in vardec")));
         },
     }, stmt.value.vardec.value.type.value);
 
@@ -156,9 +152,9 @@ std::expected<void, std::string> TypeChecker::check_assign_stmt(const PositionWr
     }
 
     if(!val_type.value()->is_subtype_of(var_type.value())) {
-        return std::unexpected(std::format("Cannot assign value of type {} to variable of type {}",
+        return std::unexpected(create_error(stmt, std::format("Cannot assign value of type {} to variable of type {}",
                                             val_type.value()->get_name(),
-                                            var_type.value()->get_name()));
+                                            var_type.value()->get_name())));
     }
 
     return {};
@@ -202,7 +198,7 @@ std::expected<void, std::string> TypeChecker::check_guard(const Exp& guard) {
     }
 
     if(auto bool_type = std::dynamic_pointer_cast<PrimitiveType>(type.value()); bool_type == nullptr) {
-        return std::unexpected("Guard was not of type bool");
+        return std::unexpected(create_error(guard, "Guard was not of type bool"));
     }
 
     return {};
@@ -232,7 +228,7 @@ std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_this_exp(
 std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_new_obj_exp(const PositionWrapper<NewObjExp>& exp) {
     auto obj_type = type_map.get_type(std::string(exp.value.class_name));
     if(!obj_type.has_value()) {
-        return std::unexpected(std::format("New object class {} doesn't exist", exp.value.class_name));
+        return std::unexpected(create_error(exp, std::format("New object class {} doesn't exist", exp.value.class_name)));
     }
 
     // TODO: check constructor
@@ -258,18 +254,22 @@ std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_binary_ex
     switch(exp.value.op) {
         case Op::Add:
         case Op::Sub:
-            return resolve_add_exp(left.value(), exp.value.op, right.value());
+            return resolve_add_exp(left.value(), exp.value.op, right.value())
+                .transform_error([exp](std::string err) { return create_error(exp, err); });
         case Op::Mult:
         case Op::Div:
-            return resolve_mult_exp(left.value(), exp.value.op, right.value());
+            return resolve_mult_exp(left.value(), exp.value.op, right.value())
+                .transform_error([exp](std::string err) { return create_error(exp, err); });
         case Op::Lt:
         case Op::Gt:
-            return resolve_comp_exp(left.value(), exp.value.op, right.value());
+            return resolve_comp_exp(left.value(), exp.value.op, right.value())
+                .transform_error([exp](std::string err) { return create_error(exp, err); });
         case Op::Eq:
         case Op::NotEq:
-            return resolve_eq_exp(left.value(), exp.value.op, right.value());
+            return resolve_eq_exp(left.value(), exp.value.op, right.value())
+                .transform_error([exp](std::string err) { return create_error(exp, err); });
         default:
-            return std::unexpected("Unhandled operator");
+            return std::unexpected(create_error(exp, "Unhandled operator"));
     }
 }
 
