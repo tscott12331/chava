@@ -91,11 +91,12 @@ class Scope {
 public:
     Scope();
     Scope(std::shared_ptr<Scope> parent);
-    std::expected<void, std::string> define(std::string& var_name, std::shared_ptr<Type> type);
-    std::expected<std::shared_ptr<Type>, std::string> get_var_type(std::string& var_name);
-    std::expected<std::shared_ptr<Type>, std::string> get_var_type(std::string_view var_name);
+    std::expected<void, std::string> define(const std::string& var_name, std::shared_ptr<Type> type, const Position& pos);
+    std::expected<void, std::string> define(const Vardec& vardec);
+    std::expected<std::shared_ptr<Type>, std::string> get_var_type(std::string& var_name, const Position& pos);
+    std::expected<std::shared_ptr<Type>, std::string> get_var_type(std::string_view var_name, const Position &pos);
 
-    std::expected<std::shared_ptr<Type>, std::string> get_this();
+    std::expected<std::shared_ptr<Type>, std::string> get_this(const PositionWrapper<ThisExp>& exp);
 private:
     std::optional<std::shared_ptr<Scope>> parent;
     std::unordered_map<std::string, std::shared_ptr<Type>> scope;
@@ -126,6 +127,7 @@ private:
 
     std::expected<void, std::string> check_while_stmt(const PositionWrapper<WhileStmt>& stmt);
     std::expected<void, std::string> check_vardec_stmt(const PositionWrapper<VardecStmt>& stmt);
+    std::expected<void, std::string> check_vardec(const Vardec& vardec);
     std::expected<void, std::string> check_assign_stmt(const PositionWrapper<AssignStmt>& stmt);
     std::expected<void, std::string> check_if_stmt(const PositionWrapper<IfStmt>& stmt);
     std::expected<void, std::string> check_block_stmt(const PositionWrapper<BlockStmt>& stmt);
@@ -135,7 +137,7 @@ private:
 
     std::expected<std::shared_ptr<Type>, std::string> resolve_exp_type(const Exp& exp);
     std::expected<std::shared_ptr<Type>, std::string> resolve_var_exp(const PositionWrapper<VarExp>& exp);
-    std::expected<std::shared_ptr<Type>, std::string> resolve_this_exp();
+    std::expected<std::shared_ptr<Type>, std::string> resolve_this_exp(const PositionWrapper<ThisExp>& exp);
     std::expected<std::shared_ptr<Type>, std::string> resolve_new_obj_exp(const PositionWrapper<NewObjExp>& exp);
     std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_exp(const PositionWrapper<MethodCallExp>& exp);
     std::expected<std::shared_ptr<Type>, std::string> resolve_binary_exp(const PositionWrapper<BinaryExp>& exp);
@@ -146,8 +148,7 @@ private:
 };
 
 template<typename T>
-std::string create_error(PositionWrapper<T> node, std::string_view message) {
-    return std::format("[{}:{}]: {}", node.pos.line, node.pos.col, message);
-}
+std::string create_error(const PositionWrapper<T> node, std::string_view message);
+std::string create_error(const Position& pos, std::string_view message);
 
 #endif
