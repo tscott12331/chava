@@ -69,7 +69,52 @@ std::expected<void, std::string> ClassType::populate_fields(TypeMap& type_map) {
 }
 
 std::expected<void, std::string> ClassType::populate_methods(TypeMap& type_map) {
-    return std::unexpected("not implemented");
+    for(const auto& md : classdef.value.method_defs) {
+        const auto method_signature = MethodSignature::from(md.value, type_map);
+        if(!method_signature) {
+            return std::unexpected(method_signature.error());
+        }
+
+        if(const auto res = check_redeclaration(method_signature.value(), md.pos); !res) {
+            return res;
+        }
+        if(parent) {
+            if(const auto res = parent.value()->check_override(method_signature.value(), md.pos); !res) {
+                return res;
+            }
+        }
+
+        methods[method_signature->name()].insert(method_signature.value());
+    }
+
+    return {};
+}
+
+std::expected<void, std::string> ClassType::check_redeclaration(const MethodSignature& method_signature, const Position& pos) {
+    if(!methods.contains(method_signature.name())) { return {}; }
+    const auto& same_name = methods[method_signature.name()];
+    if(same_name.contains(method_signature)) {
+        return std::unexpected(create_error(pos, std::format("Redefinition of method {}", method_signature.name())));
+    }
+
+    return {};
+}
+
+std::expected<void, std::string> ClassType::check_override(const MethodSignature& method_signature, const Position& pos) {
+    if(!methods.contains(method_signature.name())) { return {}; }
+    const auto& same_name = methods[method_signature.name()];
+
+    for(const auto& ms : same_name) {
+        if(method_signature.has_same_params(ms) && !method_signature.can_override(ms)) {
+            return std::unexpected(create_error(pos, std::format("Method {} cannot override inherited method", method_signature.name())));
+        }
+    }
+    
+    if(parent) {
+        return parent.value()->check_override(method_signature, pos);
+    }
+
+    return {};
 }
 
 bool ClassType::has_field(const std::string& field_name) {

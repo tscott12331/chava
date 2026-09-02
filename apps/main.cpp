@@ -8,18 +8,14 @@
 
 int main() {
     std::string input = R"(
-String y;
-y = "balesh";
 int x;
-x = (5 + 2) + y * 7 - 6 /2;
+x = (5 + 2) + 7 - 6 / 2;
 while(x - 2 > 5 * 2 * 6 - (5+2) - 5 == x + 5 < 7) {
     x = x + 1;
     if(x == 7) {
     } else {
     }
 }
-a.something(51);
-b.something_else("hahaaha", 5+2);
 
 )";
     int line_num = 1;
