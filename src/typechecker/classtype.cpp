@@ -27,19 +27,22 @@ std::expected<void, std::string> ClassType::populate(TypeMap& type_map) {
         return {};
     }
 
-    if(classdef.value.extend_class_name) {
-        const auto& extend_class_name = std::string(classdef.value.extend_class_name.value());
-        auto parent_type = type_map.get_type(extend_class_name);
-        if(!parent_type) {
-            return std::unexpected(create_error(classdef, std::format("Extending type {} does not exist", extend_class_name)));
-        }
-
-        if(auto pres = std::dynamic_pointer_cast<PrimitiveType>(parent_type.value()); pres) {
-            return std::unexpected(create_error(classdef, std::format("Class {} cannot extend primitive type {}",
-                                               classdef.value.class_name,
-                                               pres->get_name())));
-        }
-    }
+    // TODO: check if necessary? doesn't seem like it, we already add ClassType parent in constructor
+    // if(classdef.value.extend_class_name) {
+    //     std::cout << "type is extending type\n";
+    //     const auto& extend_class_name = std::string(classdef.value.extend_class_name.value());
+    //     auto parent_type = type_map.get_type(extend_class_name);
+    //     if(!parent_type) {
+    //         return std::unexpected(create_error(classdef, std::format("Extending type {} does not exist", extend_class_name)));
+    //     }
+    //     std::cout << "have valid parent type\n";
+    //
+    //     if(auto pres = std::dynamic_pointer_cast<PrimitiveType>(parent_type.value()); pres != nullptr) {
+    //         return std::unexpected(create_error(classdef, std::format("Class {} cannot extend primitive type {}",
+    //                                            classdef.value.class_name,
+    //                                            pres->get_name())));
+    //     }
+    // }
 
     if(auto res = populate_fields(type_map); !res) return res;
     if(auto res = populate_constructor(type_map); !res) return res;

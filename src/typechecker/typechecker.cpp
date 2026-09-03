@@ -73,7 +73,7 @@ std::expected<void, std::string> TypeChecker::typecheck() {
     }
 
     for(const auto [_, t] : type_map.types()) {
-        if(const auto ct = std::dynamic_pointer_cast<ClassType>(t); t != nullptr) {
+        if(const auto ct = std::dynamic_pointer_cast<ClassType>(t); ct != nullptr) {
             if(const auto pop_res = ct->populate(type_map); !pop_res) {
                 return pop_res;
             }
