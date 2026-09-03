@@ -160,7 +160,7 @@ private:
 class Scope {
 public:
     Scope();
-    Scope(std::shared_ptr<Scope> parent);
+    Scope(std::shared_ptr<Scope> parent, std::optional<std::shared_ptr<Type>> ret_type=std::nullopt, bool is_while=false);
     std::expected<void, std::string> define(const std::string& var_name, std::shared_ptr<Type> type, const Position& pos);
     std::expected<void, std::string> define(const Vardec& vardec, TypeMap& type_map);
     std::expected<std::shared_ptr<Type>, std::string> get_var_type(std::string& var_name, const Position& pos);
@@ -169,8 +169,13 @@ public:
     std::expected<std::shared_ptr<Type>, std::string> get_this(const PositionWrapper<ThisExp>& exp);
 
     std::optional<std::shared_ptr<Scope>> parent;
+
+    std::optional<std::shared_ptr<Type>> ret_type() const;
+    bool is_while() const;
 private:
     std::unordered_map<std::string, std::shared_ptr<Type>> scope;
+    std::optional<std::shared_ptr<Type>> _ret_type;
+    bool _is_while = false;
 };
 
 
@@ -209,6 +214,7 @@ private:
     std::expected<void, std::string> check_if_stmt(const PositionWrapper<std::shared_ptr<IfStmt>>& stmt);
     std::expected<void, std::string> check_block_stmt(const PositionWrapper<std::shared_ptr<BlockStmt>>& stmt);
     std::expected<void, std::string> check_return_stmt(const PositionWrapper<std::shared_ptr<ReturnStmt>>& stmt);
+    std::expected<void, std::string> check_break_stmt(const PositionWrapper<std::shared_ptr<BreakStmt>>& stmt);
 
     std::expected<void, std::string> check_guard(const Exp& guard);
 
@@ -226,7 +232,7 @@ private:
     std::expected<void, std::string> add_params_to_scope(const CommaVardec& params);
     std::expected<TypeList, std::string> args_to_type_list(const CommaExp& args);
 
-    void enter_scope();
+    void enter_scope(std::optional<std::shared_ptr<Type>> ret_type=std::nullopt, bool is_while=false);
     void exit_scope();
 };
 

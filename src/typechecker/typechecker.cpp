@@ -199,6 +199,26 @@ std::expected<void, std::string> TypeChecker::check_constructor(const Constructo
     return {};
 }
 std::expected<void, std::string> TypeChecker::check_method(const MethodDef& method_def, std::shared_ptr<ClassType> type) {
+    const auto ret_type_name = to_string(method_def.value.ret_type);
+    const auto ret_type = type_map.get_type(ret_type_name);
+    if(!ret_type) {
+        return std::unexpected(create_error(method_def.value.ret_type, std::format("Unknown return type {}", ret_type_name)));
+    }
+
+    enter_scope(ret_type);
+    
+    if(const auto& res = add_params_to_scope(method_def.value.params); !res) {
+        return res;
+    }
+
+
+    if(const auto& res = check_block_stmt(method_def.value.body)) {
+        return res;
+    }
+
+    exit_scope();
+
+    return {};
 }
 
 std::expected<void, std::string> TypeChecker::add_params_to_scope(const CommaVardec& params) {
@@ -234,7 +254,7 @@ std::expected<void, std::string> TypeChecker::check_stmt(const Stmt& stmt) {
         [this, stmt](const VardecStmt&) -> std::expected<void, std::string> { return check_vardec_stmt(stmt.to<VardecStmt>()); },
         [this, stmt](const AssignStmt&) -> std::expected<void, std::string> { return check_assign_stmt(stmt.to<AssignStmt>()); },
         [this, stmt](const std::shared_ptr<WhileStmt>&) -> std::expected<void, std::string> { return check_while_stmt(stmt.to<std::shared_ptr<WhileStmt>>()); },
-        [this](const std::shared_ptr<BreakStmt>&) -> std::expected<void, std::string> { return {}; },
+        [this, stmt](const std::shared_ptr<BreakStmt>&) -> std::expected<void, std::string> { return check_break_stmt(stmt.to<std::shared_ptr<BreakStmt>>()); },
         [this, stmt](const std::shared_ptr<ReturnStmt>&) -> std::expected<void, std::string> { return check_return_stmt(stmt.to<std::shared_ptr<ReturnStmt>>()); },
         [this, stmt](const std::shared_ptr<IfStmt>&) -> std::expected<void, std::string> { return check_if_stmt(stmt.to<std::shared_ptr<IfStmt>>()); },
         [this, stmt](const std::shared_ptr<BlockStmt>&) -> std::expected<void, std::string> { return check_block_stmt(stmt.to<std::shared_ptr<BlockStmt>>()); },
@@ -322,7 +342,7 @@ std::expected<void, std::string> TypeChecker::check_if_stmt(const PositionWrappe
 
 std::expected<void, std::string> TypeChecker::check_block_stmt(const PositionWrapper<std::shared_ptr<BlockStmt>>& stmt) {
     scope = Scope(scope);
-    for(auto s : stmt.value->stmts) {
+    for(const auto& s : stmt.value->stmts) {
         if(auto stmt_res = check_stmt(s); !stmt_res) {
             return std::unexpected(stmt_res.error());
         }
@@ -332,7 +352,36 @@ std::expected<void, std::string> TypeChecker::check_block_stmt(const PositionWra
 }
 
 std::expected<void, std::string> TypeChecker::check_return_stmt(const PositionWrapper<std::shared_ptr<ReturnStmt>>& stmt) {
-    return std::unexpected("not implemented");
+    if(!stmt.value->val) {
+        if(scope.ret_type()) {
+            return std::unexpected(create_error(stmt, std::format("Missing return value for method return type {}", scope.ret_type().value()->get_name())));
+        }
+        return {};
+    }
+
+    const auto ret_val = resolve_exp_type(stmt.value->val.value());
+    if(!ret_val) {
+        return std::unexpected(ret_val.error());
+    }
+    if(!scope.ret_type()) {
+        return std::unexpected(create_error(stmt.value->val.value(), "Cannot return type on void method"));
+    }
+
+    if(!ret_val.value()->is_subtype_of(scope.ret_type().value())) {
+        return std::unexpected(create_error(stmt.value->val.value(), 
+                                std::format("Return value {} is not assignable to return type {}",
+                                            ret_val.value()->get_name(),
+                                            scope.ret_type().value()->get_name())));
+    }
+
+    return {};
+}
+
+std::expected<void, std::string> TypeChecker::check_break_stmt(const PositionWrapper<std::shared_ptr<BreakStmt>>& stmt) {
+    if(!scope.is_while()) {
+        return std::unexpected(create_error(stmt, "Cannot break outside of loop context"));
+    }
+    return {};
 }
 
 std::expected<void, std::string> TypeChecker::check_guard(const Exp& guard) {
@@ -477,7 +526,7 @@ std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_eq_exp(st
     return TypeChecker::pr_bool;
 }
 
-void TypeChecker::enter_scope() {
+void TypeChecker::enter_scope(std::optional<std::shared_ptr<Type>> ret_type, bool is_while) {
     scope = Scope(scope);
 }
 

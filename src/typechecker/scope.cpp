@@ -2,9 +2,10 @@
 #include <format>
 #include <memory>
 Scope::Scope() {}
-Scope::Scope(std::shared_ptr<Scope> parent) : parent(parent) {}
+Scope::Scope(std::shared_ptr<Scope> parent, std::optional<std::shared_ptr<Type>> ret_type, bool is_while) 
+            : parent(parent), _ret_type(ret_type), _is_while(is_while) {}
 
-#define THIS "this"
+constexpr auto THIS = "this";
 
 std::expected<void, std::string> Scope::define(const std::string& var_name, std::shared_ptr<Type> type, const Position& pos) {
     if(scope.contains(var_name)) {
@@ -45,4 +46,8 @@ std::expected<std::shared_ptr<Type>, std::string> Scope::get_var_type(std::strin
 
 std::expected<std::shared_ptr<Type>, std::string> Scope::get_this(const PositionWrapper<ThisExp>& exp) {
     return get_var_type(THIS, exp.pos);
+}
+
+std::optional<std::shared_ptr<Type>> Scope::ret_type() const {
+    return _ret_type;
 }
