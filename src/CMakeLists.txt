@@ -9,6 +9,7 @@ add_library(chava_lib
     typechecker/scope.cpp
     typechecker/typemap.cpp
     typechecker/classtype.cpp
+    typechecker/methodsignature.cpp
 )
 
 target_include_directories(chava_lib PUBLIC

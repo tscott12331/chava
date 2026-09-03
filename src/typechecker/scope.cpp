@@ -51,3 +51,7 @@ std::expected<std::shared_ptr<Type>, std::string> Scope::get_this(const Position
 std::optional<std::shared_ptr<Type>> Scope::ret_type() const {
     return _ret_type;
 }
+
+bool Scope::is_while() const {
+    return _is_while;
+}

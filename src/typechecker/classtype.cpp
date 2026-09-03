@@ -1,8 +1,10 @@
 #include <chava/typechecker.hpp>
 #include <format>
 
-ClassType::ClassType(const ClassDef& classdef) : Type(std::string(classdef.value.class_name)), 
-                                           classdef(classdef) {}
+ClassType::ClassType(const ClassDef& classdef) : ClassType(classdef, std::nullopt) {}
+ClassType::ClassType(const ClassDef& classdef, std::optional<std::shared_ptr<ClassType>> parent)
+    : Type(std::string(classdef.value.class_name)), classdef(classdef), parent(parent) {
+}
 
 bool ClassType::is_subtype_of(std::shared_ptr<Type> other) {
     if(other->get_name() == get_name()) {
