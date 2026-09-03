@@ -17,7 +17,7 @@ class Type {
 public:
     Type(std::string name) : name(name) {};
 
-    std::string_view get_name();
+    const std::string& get_name() const;
     uint get_depth();
     virtual std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_ret(MethodCallExp& method_call) = 0;
     virtual bool is_subtype_of(std::shared_ptr<Type> other) = 0;
@@ -98,6 +98,9 @@ public:
         // when their name/types match
         return _name == other.name() && _params == other.params();
     }
+    bool operator==(MethodSignature other) const {
+        return _name == other.name() && _params == other.params();
+    }
 private:
     std::string _name;
     TypeList _params;
@@ -105,8 +108,8 @@ private:
     MethodSignature(const std::string& name, const TypeList& params, std::shared_ptr<Type> ret_type);
 };
 
-class MethodSignatureHash {
-    std::size_t operator()(const MethodSignature& ms) {
+struct MethodSignatureHash {
+    std::size_t operator()(const MethodSignature& ms) const {
         const auto name_hash = std::hash<std::string>{}(ms.name());
         std::size_t param_hash = 0;
         for(const auto pt : ms.params().types()) {
@@ -131,7 +134,7 @@ class ClassType : public Type {
     // TODO: implement constructor
 public:
     ClassType(const ClassDef& classdef);
-    ClassType(const ClassDef& classdef, std::optional<std::shared_ptr<Type>> parent);
+    ClassType(const ClassDef& classdef, std::optional<std::shared_ptr<ClassType>> parent);
     std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_ret(MethodCallExp& method_call) override;
     bool is_subtype_of(std::shared_ptr<Type> other) override;
 
@@ -201,8 +204,8 @@ private:
     std::expected<void, std::string> check_constructor(const Constructor& constructor, std::shared_ptr<ClassType> type);
     std::expected<void, std::string> check_method(const MethodDef& method_def, std::shared_ptr<ClassType> type);
 
-    std::expected<void, std::string> initialize_typemap(std::unordered_map<std::string, ClassDef&>& known_classes);
-    std::expected<std::shared_ptr<Type>, std::string> define_type(const std::string& class_name, std::unordered_map<std::string, ClassDef&>& known_classes, std::unordered_set<std::string>& created_types);
+    std::expected<void, std::string> initialize_typemap(std::unordered_map<std::string, ClassDef>& known_classes);
+    std::expected<std::shared_ptr<ClassType>, std::string> define_type(const std::string& class_name, std::unordered_map<std::string, ClassDef>& known_classes, std::unordered_set<std::string>& created_types);
 
     std::expected<void, std::string> check_stmt(const PositionWrapper<StmtVariant>& stmt);
     std::expected<void, std::string> check_exp(const Exp& exp);

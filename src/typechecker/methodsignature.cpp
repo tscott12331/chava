@@ -53,6 +53,7 @@ bool MethodSignature::can_override(const MethodSignature& other) const {
 }
 
 
+TypeList::TypeList() : TypeList(std::vector<std::shared_ptr<Type>>{}) {}
 TypeList::TypeList(const std::vector<std::shared_ptr<Type>>& types) : _types(types) {}
 std::vector<std::shared_ptr<Type>> TypeList::types() const { return _types; }
 

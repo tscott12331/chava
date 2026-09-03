@@ -35,7 +35,7 @@ std::vector<std::shared_ptr<Type>> built_ins = {
 
 PrimitiveType::PrimitiveType(std::string name) : Type(name) {}
 
-std::string_view Type::get_name() {
+const std::string& Type::get_name() const {
     return name;
 }
 
@@ -59,7 +59,7 @@ std::expected<void, std::string> TypeChecker::Typecheck(Program &program) {
 
 std::expected<void, std::string> TypeChecker::typecheck() {
     // TODO: class typechecking contract
-    std::unordered_map<std::string, ClassDef&> known_classes;
+    std::unordered_map<std::string, ClassDef> known_classes;
     for(const auto& classdef : program.classdefs) {
         const auto class_name = std::string(classdef.value.class_name);
         if(known_classes.contains(class_name)) {
@@ -73,7 +73,7 @@ std::expected<void, std::string> TypeChecker::typecheck() {
     }
 
     for(const auto [_, t] : type_map.types()) {
-        if(const auto ct = std::dynamic_pointer_cast<ClassType>(t); t != nullptr) {
+        if(const auto ct = std::dynamic_pointer_cast<ClassType>(t); ct != nullptr) {
             if(const auto pop_res = ct->populate(type_map); !pop_res) {
                 return pop_res;
             }
@@ -96,7 +96,7 @@ std::expected<void, std::string> TypeChecker::typecheck() {
     return {};
 }
 
-std::expected<void, std::string> TypeChecker::initialize_typemap(std::unordered_map<std::string, ClassDef&>& known_classes) {
+std::expected<void, std::string> TypeChecker::initialize_typemap(std::unordered_map<std::string, ClassDef>& known_classes) {
     std::unordered_set<std::string> created_types;
     for(const auto [_, cd] : known_classes) {
         const auto class_name = std::string(cd.value.class_name);
@@ -109,7 +109,7 @@ std::expected<void, std::string> TypeChecker::initialize_typemap(std::unordered_
     return {};
 }
 
-std::expected<std::shared_ptr<Type>, std::string> TypeChecker::define_type(const std::string& class_name, std::unordered_map<std::string, ClassDef&>& known_classes, std::unordered_set<std::string>& created_types) {
+std::expected<std::shared_ptr<ClassType>, std::string> TypeChecker::define_type(const std::string& class_name, std::unordered_map<std::string, ClassDef>& known_classes, std::unordered_set<std::string>& created_types) {
     const auto cdi = known_classes.find(class_name);
     if(cdi == known_classes.end()) {
         return std::unexpected(std::format("Attempting to defined unknown class {}", class_name));
@@ -122,7 +122,7 @@ std::expected<std::shared_ptr<Type>, std::string> TypeChecker::define_type(const
 
     created_types.insert(class_name);
     
-    std::optional<std::shared_ptr<Type>> parent = std::nullopt;
+    std::optional<std::shared_ptr<ClassType>> parent = std::nullopt;
     if(cd.value.extend_class_name) {
         const auto extend_name = std::string(cd.value.extend_class_name.value());
         if(const auto parent_res = define_type(extend_name, known_classes, created_types); !parent_res) {
@@ -171,6 +171,7 @@ std::expected<void, std::string> TypeChecker::check_class(const ClassDef& classd
     }
 
     exit_scope();
+    return {};
 }
 
 std::expected<void, std::string> TypeChecker::check_constructor(const Constructor& constructor, std::shared_ptr<ClassType> type) {
@@ -198,6 +199,8 @@ std::expected<void, std::string> TypeChecker::check_constructor(const Constructo
     exit_scope();
     return {};
 }
+
+// TODO: need return path checking
 std::expected<void, std::string> TypeChecker::check_method(const MethodDef& method_def, std::shared_ptr<ClassType> type) {
     const auto ret_type_name = to_string(method_def.value.ret_type);
     const auto ret_type = type_map.get_type(ret_type_name);
