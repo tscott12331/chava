@@ -364,8 +364,11 @@ std::expected<CommaExp, std::string> Parser::parse_comma_exp() {
     if(!exp) {
         // assume empty CommaExp
         // if real error, higher up levels will fail and report error
-        return CommaExp{
-            .exps=std::move(exps),
+        return CommaExp {
+            .value=CommaExpValue{
+                .exps=std::move(exps),
+            },
+            .pos=exp->pos,
         };
     }
 
@@ -384,8 +387,11 @@ std::expected<CommaExp, std::string> Parser::parse_comma_exp() {
         token = get_token_of(TokenType::CommaToken);
     }
 
-    return CommaExp{
-        .exps=std::move(exps),
+    return CommaExp {
+        .value=CommaExpValue{
+            .exps=std::move(exps),
+        },
+        .pos=exp->pos,
     };
 }
 

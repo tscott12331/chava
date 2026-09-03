@@ -2,6 +2,7 @@
 #include <expected>
 #include <format>
 #include <memory>
+#include <stdexcept>
 #include <variant>
 #include <vector>
 
@@ -58,8 +59,34 @@ std::expected<void, std::string> TypeChecker::Typecheck(Program &program) {
 
 std::expected<void, std::string> TypeChecker::typecheck() {
     // TODO: class typechecking contract
+    std::unordered_map<std::string, ClassDef&> known_classes;
+    for(const auto& classdef : program.classdefs) {
+        const auto class_name = std::string(classdef.value.class_name);
+        if(known_classes.contains(class_name)) {
+            return std::unexpected(create_error(classdef, std::format("Redefined class {}", class_name)));
+        }
+        known_classes[class_name] = classdef;
+    }
 
-    for(auto &stmt : program.stmts) {
+    if(const auto res = initialize_typemap(known_classes); !res) {
+        return res;
+    }
+
+    for(const auto [_, t] : type_map.types()) {
+        if(const auto ct = std::dynamic_pointer_cast<ClassType>(t); t != nullptr) {
+            if(const auto pop_res = ct->populate(type_map); !pop_res) {
+                return pop_res;
+            }
+        }
+    }
+
+    for(const auto& classdef : program.classdefs) {
+        if(auto res = check_class(classdef); !res) {
+            return std::unexpected(res.error());
+        }
+    }
+
+    for(const auto& stmt : program.stmts) {
         // go?
         if(auto res = check_stmt(stmt); !res) {
             return std::unexpected(res.error());
@@ -68,6 +95,138 @@ std::expected<void, std::string> TypeChecker::typecheck() {
 
     return {};
 }
+
+std::expected<void, std::string> TypeChecker::initialize_typemap(std::unordered_map<std::string, ClassDef&>& known_classes) {
+    std::unordered_set<std::string> created_types;
+    for(const auto [_, cd] : known_classes) {
+        const auto class_name = std::string(cd.value.class_name);
+        const auto define_res = define_type(class_name, known_classes, created_types);
+        if(!define_res) {
+            return std::unexpected(define_res.error());
+        }
+    }
+    
+    return {};
+}
+
+std::expected<std::shared_ptr<Type>, std::string> TypeChecker::define_type(const std::string& class_name, std::unordered_map<std::string, ClassDef&>& known_classes, std::unordered_set<std::string>& created_types) {
+    const auto cdi = known_classes.find(class_name);
+    if(cdi == known_classes.end()) {
+        return std::unexpected(std::format("Attempting to defined unknown class {}", class_name));
+    }
+
+    const auto& cd = cdi->second;
+    if(created_types.contains(class_name)) {
+        return std::unexpected(create_error(cd, "Cyclical inheritance detected"));
+    }
+
+    created_types.insert(class_name);
+    
+    std::optional<std::shared_ptr<Type>> parent = std::nullopt;
+    if(cd.value.extend_class_name) {
+        const auto extend_name = std::string(cd.value.extend_class_name.value());
+        if(const auto parent_res = define_type(extend_name, known_classes, created_types); !parent_res) {
+            return parent_res;
+        } else {
+            parent = parent_res.value();
+        }
+    }
+
+    // ClassType(const ClassDef& classdef, std::optional<std::shared_ptr<Type>> parent);
+    const auto type = ClassType(cd, parent);
+    const auto shared_type = std::make_shared<ClassType>(type);
+    if(const auto define_res = type_map.define(shared_type); !define_res) {
+        return std::unexpected(define_res.error());
+    }
+
+    return shared_type;
+}
+
+std::expected<void, std::string> TypeChecker::check_class(const ClassDef& classdef) {
+    const auto class_name = std::string(classdef.value.class_name);
+    const auto type = type_map.get_type(std::string(class_name));
+    if(!type) {
+        return std::unexpected(create_error(classdef, std::format("{} is not a valid type", class_name)));
+    }
+    const auto class_type = std::dynamic_pointer_cast<ClassType>(type.value());
+    if(class_type == nullptr) {
+        return std::unexpected(create_error(classdef, "Cannot create a class out of a primitive type"));
+    }
+
+    enter_scope();
+    for(const auto& vds : classdef.value.vardecs) {
+        if(const auto res = scope.define(vds.value.vardec, type_map); !res) {
+            return res;
+        }
+    }
+
+    if(const auto& res = check_constructor(classdef.value.constructor, class_type); !res) {
+        return res;
+    }
+
+    for(const auto& mn : classdef.value.method_defs) {
+        if(const auto& res = check_method(mn, class_type); !res) {
+            return res;
+        }
+    }
+
+    exit_scope();
+}
+
+std::expected<void, std::string> TypeChecker::check_constructor(const Constructor& constructor, std::shared_ptr<ClassType> type) {
+    enter_scope();
+    if(const auto res = add_params_to_scope(constructor.value.params); !res) {
+        return res;
+    }
+
+    if(constructor.value.super_args) {
+        const auto super_type_list = args_to_type_list(constructor.value.super_args.value());
+        if(!super_type_list) {
+            return std::unexpected(super_type_list.error());
+        }
+        if(const auto& res = type->check_super_args(super_type_list.value(), constructor.value.super_args->pos); !res) {
+            return res;
+        }
+    }
+
+    for(const auto& stmt : constructor.value.stmts) {
+        if(const auto& res = check_stmt(stmt); !res) {
+            return res;
+        }
+    }
+
+    exit_scope();
+    return {};
+}
+std::expected<void, std::string> TypeChecker::check_method(const MethodDef& method_def, std::shared_ptr<ClassType> type) {
+}
+
+std::expected<void, std::string> TypeChecker::add_params_to_scope(const CommaVardec& params) {
+    for(const auto& vd : params.value.vardecs) {
+        if(const auto res = scope.define(vd, type_map); !res) {
+            return res;
+        }
+    }
+
+    return {};
+}
+
+std::expected<TypeList, std::string> TypeChecker::args_to_type_list(const CommaExp& args) {
+    // const auto tl = TypeList
+    std::vector<std::shared_ptr<Type>> types;
+    for(const auto& exp : args.value.exps) {
+        const auto type = resolve_exp_type(exp);
+        if(!type) {
+            return std::unexpected(type.error());
+        }
+
+        types.push_back(type.value());
+    }
+
+    return TypeList(types);
+}
+
+
 
 std::expected<void, std::string> TypeChecker::check_stmt(const Stmt& stmt) {
     auto res = std::visit(overloaded {
@@ -316,4 +475,16 @@ std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_eq_exp(st
     }
 
     return TypeChecker::pr_bool;
+}
+
+void TypeChecker::enter_scope() {
+    scope = Scope(scope);
+}
+
+void TypeChecker::exit_scope() {
+    if(!scope.parent) {
+        throw std::logic_error("Exiting from no scope");
+    }
+
+    scope = scope.parent.value();
 }

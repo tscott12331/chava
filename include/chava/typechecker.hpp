@@ -40,8 +40,10 @@ public:
     TypeMap(const std::vector<std::shared_ptr<Type>>& types);
 
     std::optional<std::shared_ptr<Type>> get_type(const std::string&);
+    std::expected<void, std::string> define(std::shared_ptr<Type> type);
+    const std::unordered_map<std::string, std::shared_ptr<Type>>& types() const;
 private:
-    std::unordered_map<std::string, std::shared_ptr<Type>> known_types;
+    std::unordered_map<std::string, std::shared_ptr<Type>> _types;
 };
 
 bool types_equal(const std::shared_ptr<Type> left, const std::shared_ptr<Type> right);
@@ -129,13 +131,17 @@ class ClassType : public Type {
     // TODO: implement constructor
 public:
     ClassType(const ClassDef& classdef);
+    ClassType(const ClassDef& classdef, std::optional<std::shared_ptr<Type>> parent);
     std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_ret(MethodCallExp& method_call) override;
     bool is_subtype_of(std::shared_ptr<Type> other) override;
 
     std::expected<void, std::string> populate(TypeMap& type_map);
+    
+    std::expected<void, std::string> check_super_args(const TypeList& args, const Position& pos);
 private:
     std::expected<void, std::string> populate_fields(TypeMap& type_map);
     std::expected<void, std::string> populate_methods(TypeMap& type_map);
+    std::expected<void, std::string> populate_constructor(TypeMap& type_map);
 
     std::expected<void, std::string> check_redeclaration(const MethodSignature& method_signature, const Position& pos);
     std::expected<void, std::string> check_override(const MethodSignature& method_signature, const Position& pos);
@@ -144,8 +150,8 @@ private:
 
     std::optional<std::shared_ptr<ClassType>> parent;
     std::unordered_map<std::string, std::shared_ptr<Type>> fields;
+    TypeList constructor_args;
     std::unordered_map<std::string, std::unordered_set<MethodSignature, MethodSignatureHash>> methods;
-    // std::unordered_map<std::string, MethodSignature> methods;
 
     const ClassDef& classdef;
     bool is_populated = false;
@@ -161,8 +167,9 @@ public:
     std::expected<std::shared_ptr<Type>, std::string> get_var_type(std::string_view var_name, const Position &pos);
 
     std::expected<std::shared_ptr<Type>, std::string> get_this(const PositionWrapper<ThisExp>& exp);
-private:
+
     std::optional<std::shared_ptr<Scope>> parent;
+private:
     std::unordered_map<std::string, std::shared_ptr<Type>> scope;
 };
 
@@ -185,7 +192,13 @@ private:
     TypeMap type_map;
     Scope scope;
 
-    std::expected<void, std::string> check_class();
+    std::expected<void, std::string> check_class(const ClassDef& classdef);
+    std::expected<void, std::string> check_constructor(const Constructor& constructor, std::shared_ptr<ClassType> type);
+    std::expected<void, std::string> check_method(const MethodDef& method_def, std::shared_ptr<ClassType> type);
+
+    std::expected<void, std::string> initialize_typemap(std::unordered_map<std::string, ClassDef&>& known_classes);
+    std::expected<std::shared_ptr<Type>, std::string> define_type(const std::string& class_name, std::unordered_map<std::string, ClassDef&>& known_classes, std::unordered_set<std::string>& created_types);
+
     std::expected<void, std::string> check_stmt(const PositionWrapper<StmtVariant>& stmt);
     std::expected<void, std::string> check_exp(const Exp& exp);
 
@@ -209,6 +222,12 @@ private:
     std::expected<std::shared_ptr<Type>, std::string> resolve_mult_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);
     std::expected<std::shared_ptr<Type>, std::string> resolve_comp_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);
     std::expected<std::shared_ptr<Type>, std::string> resolve_eq_exp(std::shared_ptr<Type> left, Op op, std::shared_ptr<Type> right);
+
+    std::expected<void, std::string> add_params_to_scope(const CommaVardec& params);
+    std::expected<TypeList, std::string> args_to_type_list(const CommaExp& args);
+
+    void enter_scope();
+    void exit_scope();
 };
 
 #endif

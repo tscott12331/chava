@@ -42,9 +42,11 @@ using ExpVariant = std::variant<
 
 using Exp = PositionWrapper<ExpVariant>;
 
-struct CommaExp {
+struct CommaExpValue {
     std::vector<Exp> exps;
 };
+
+using CommaExp = PositionWrapper<CommaExpValue>;
 
 struct VarExp {
     std::string_view var;

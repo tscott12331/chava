@@ -40,6 +40,7 @@ std::expected<void, std::string> ClassType::populate(TypeMap& type_map) {
     }
 
     if(auto res = populate_fields(type_map); !res) return res;
+    if(auto res = populate_constructor(type_map); !res) return res;
     if(auto res = populate_methods(type_map); !res) return res;
 
     is_populated = true;
@@ -90,6 +91,22 @@ std::expected<void, std::string> ClassType::populate_methods(TypeMap& type_map) 
     return {};
 }
 
+std::expected<void, std::string> ClassType::populate_constructor(TypeMap& type_map) {
+    std::vector<std::shared_ptr<Type>> types;
+    for(const auto& vd : classdef.value.constructor.value.params.value.vardecs) {
+        const auto type_name = to_string(vd.value.type);
+        const auto type = type_map.get_type(type_name);
+        if(!type) {
+            return std::unexpected(create_error(vd, std::format("Unknown type {} in constructor", type_name)));
+        }
+
+        types.push_back(type.value());
+    }
+
+    constructor_args = TypeList(types);
+    return {};
+}
+
 std::expected<void, std::string> ClassType::check_redeclaration(const MethodSignature& method_signature, const Position& pos) {
     if(!methods.contains(method_signature.name())) { return {}; }
     const auto& same_name = methods[method_signature.name()];
@@ -120,4 +137,16 @@ std::expected<void, std::string> ClassType::check_override(const MethodSignature
 bool ClassType::has_field(const std::string& field_name) {
     return fields.contains(field_name) ||
           (parent && parent.value()->has_field(field_name));
+}
+
+std::expected<void, std::string> ClassType::check_super_args(const TypeList& args, const Position& pos) {
+    if(!parent) {
+        return std::unexpected(create_error(pos, "Cannot call super constructor on base class"));
+    }
+
+    if(!args.can_assign_to(parent.value()->constructor_args)) {
+        return std::unexpected(create_error(pos, std::format("Super arguments do not match {} class constructor", parent.value()->get_name())));
+    }
+
+    return {};
 }
