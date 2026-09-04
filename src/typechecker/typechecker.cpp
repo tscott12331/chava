@@ -49,7 +49,7 @@ bool PrimitiveType::is_subtype_of(std::shared_ptr<Type> other) {
 
 TypeChecker::TypeChecker(Program& program) : program(program) {
     type_map = TypeMap(built_ins);
-    scope = Scope();
+    scope = std::make_shared<Scope>(Scope());
 }
 
 std::expected<void, std::string> TypeChecker::Typecheck(Program &program) {
@@ -155,7 +155,7 @@ std::expected<void, std::string> TypeChecker::check_class(const ClassDef& classd
 
     enter_scope();
     for(const auto& vds : classdef.value.vardecs) {
-        if(const auto res = scope.define(vds.value.vardec, type_map); !res) {
+        if(const auto res = scope->define(vds.value.vardec, type_map); !res) {
             return res;
         }
     }
@@ -215,7 +215,7 @@ std::expected<void, std::string> TypeChecker::check_method(const MethodDef& meth
     }
 
 
-    if(const auto& res = check_block_stmt(method_def.value.body)) {
+    if(const auto& res = check_block_stmt(method_def.value.body); !res) {
         return res;
     }
 
@@ -226,7 +226,7 @@ std::expected<void, std::string> TypeChecker::check_method(const MethodDef& meth
 
 std::expected<void, std::string> TypeChecker::add_params_to_scope(const CommaVardec& params) {
     for(const auto& vd : params.value.vardecs) {
-        if(const auto res = scope.define(vd, type_map); !res) {
+        if(const auto res = scope->define(vd, type_map); !res) {
             return res;
         }
     }
@@ -304,11 +304,11 @@ std::expected<void, std::string> TypeChecker::check_vardec(const Vardec& vardec)
         return std::unexpected(create_error(vardec, std::format("Cannot declare a variable of type {}", TypeChecker::pr_void->get_name())));
     }
 
-    return scope.define(vardec, type_map);
+    return scope->define(vardec, type_map);
 }
 
 std::expected<void, std::string> TypeChecker::check_assign_stmt(const PositionWrapper<AssignStmt>& stmt) {
-    auto var_type = scope.get_var_type(stmt.value.var, stmt.pos);
+    auto var_type = scope->get_var_type(stmt.value.var, stmt.pos);
     if(!var_type) {
         return std::unexpected(var_type.error());
     }
@@ -344,20 +344,21 @@ std::expected<void, std::string> TypeChecker::check_if_stmt(const PositionWrappe
 }
 
 std::expected<void, std::string> TypeChecker::check_block_stmt(const PositionWrapper<std::shared_ptr<BlockStmt>>& stmt) {
-    scope = Scope(scope);
+    enter_scope();
     for(const auto& s : stmt.value->stmts) {
         if(auto stmt_res = check_stmt(s); !stmt_res) {
             return std::unexpected(stmt_res.error());
         }
     }
+    exit_scope();
 
     return {};
 }
 
 std::expected<void, std::string> TypeChecker::check_return_stmt(const PositionWrapper<std::shared_ptr<ReturnStmt>>& stmt) {
     if(!stmt.value->val) {
-        if(scope.ret_type()) {
-            return std::unexpected(create_error(stmt, std::format("Missing return value for method return type {}", scope.ret_type().value()->get_name())));
+        if(scope->ret_type()) {
+            return std::unexpected(create_error(stmt, std::format("Missing return value for method return type {}", scope->ret_type().value()->get_name())));
         }
         return {};
     }
@@ -366,22 +367,22 @@ std::expected<void, std::string> TypeChecker::check_return_stmt(const PositionWr
     if(!ret_val) {
         return std::unexpected(ret_val.error());
     }
-    if(!scope.ret_type()) {
+    if(!scope->ret_type()) {
         return std::unexpected(create_error(stmt.value->val.value(), "Cannot return type on void method"));
     }
 
-    if(!ret_val.value()->is_subtype_of(scope.ret_type().value())) {
+    if(!ret_val.value()->is_subtype_of(scope->ret_type().value())) {
         return std::unexpected(create_error(stmt.value->val.value(), 
                                 std::format("Return value {} is not assignable to return type {}",
                                             ret_val.value()->get_name(),
-                                            scope.ret_type().value()->get_name())));
+                                            scope->ret_type().value()->get_name())));
     }
 
     return {};
 }
 
 std::expected<void, std::string> TypeChecker::check_break_stmt(const PositionWrapper<std::shared_ptr<BreakStmt>>& stmt) {
-    if(!scope.is_while()) {
+    if(!scope->is_while()) {
         return std::unexpected(create_error(stmt, "Cannot break outside of loop context"));
     }
     return {};
@@ -414,11 +415,11 @@ std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_exp_type(
 }
 
 std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_var_exp(const PositionWrapper<VarExp>& exp) {
-    return scope.get_var_type(exp.value.var, exp.pos);
+    return scope->get_var_type(exp.value.var, exp.pos);
 }
 
 std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_this_exp(const PositionWrapper<ThisExp>& exp) {
-    return scope.get_this(exp);
+    return scope->get_this(exp);
 }
 
 std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_new_obj_exp(const PositionWrapper<std::shared_ptr<NewObjExp>>& exp) {
@@ -530,13 +531,13 @@ std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_eq_exp(st
 }
 
 void TypeChecker::enter_scope(std::optional<std::shared_ptr<Type>> ret_type, bool is_while) {
-    scope = Scope(scope);
+    scope = std::make_shared<Scope>(Scope(scope));
 }
 
 void TypeChecker::exit_scope() {
-    if(!scope.parent) {
+    if(!scope->parent) {
         throw std::logic_error("Exiting from no scope");
     }
 
-    scope = scope.parent.value();
+    scope = scope->parent.value();
 }

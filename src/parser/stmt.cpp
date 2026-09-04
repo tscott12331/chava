@@ -134,6 +134,7 @@ std::expected<Stmt, std::string> Parser::parse_return_stmt() {
     }
 
     if(token->type == TokenType::SemiColonToken) {
+        cursor += 1;
         return Stmt{
             .value=std::make_shared<ReturnStmt>(ReturnStmt{
                 .val=std::nullopt
@@ -151,6 +152,7 @@ std::expected<Stmt, std::string> Parser::parse_return_stmt() {
     if(!token) {
         return std::unexpected(token.error());
     }
+    cursor += 1;
 
     return Stmt{
         .value=std::make_shared<ReturnStmt>(ReturnStmt{

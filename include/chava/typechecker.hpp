@@ -198,7 +198,7 @@ public:
 private:
     Program& program;
     TypeMap type_map;
-    Scope scope;
+    std::shared_ptr<Scope> scope;
 
     std::expected<void, std::string> check_class(const ClassDef& classdef);
     std::expected<void, std::string> check_constructor(const Constructor& constructor, std::shared_ptr<ClassType> type);

@@ -14,6 +14,8 @@ std::expected<CommaVardec, std::string> Parser::parse_comma_vardec() {
         };
     }
 
+    vardecs.push_back(vardec.value());
+
     auto token = get_token_of(TokenType::CommaToken);
     while(token) {
         cursor += 1;
@@ -229,6 +231,7 @@ std::expected<ClassDef, std::string> Parser::parse_classdef() {
             return std::unexpected(method_def.error());
         }
         method_defs.push_back(std::move(method_def.value()));
+        token = get_token();
     }
 
     token = get_token_of(TokenType::RBracketToken);

@@ -9,7 +9,6 @@ std::expected<ParsedType, std::string> Parser::parse_type() {
     if(!type_token) {
         return std::unexpected(type_token.error());
     }
-    cursor += 1;
 
     ParsedTypeVariant type;
     switch(type_token->type) {
@@ -20,7 +19,8 @@ std::expected<ParsedType, std::string> Parser::parse_type() {
             type = ParsedPrimitiveType::Bool;
             break;
         case TokenType::VoidToken:
-            return std::unexpected("Can't create a variable with type void");
+            type = ParsedPrimitiveType::Void;
+            break;
         case TokenType::IdentToken:
             type = ParsedClassType{
                 .class_name=type_token->raw,
@@ -29,6 +29,8 @@ std::expected<ParsedType, std::string> Parser::parse_type() {
         default:
             return std::unexpected(std::format("Can't use {} as a type", token_to_string(type_token.value())));
     }
+
+    cursor += 1;
 
     return ParsedType{
         .value=type,

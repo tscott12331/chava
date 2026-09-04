@@ -21,7 +21,7 @@ std::optional<std::shared_ptr<Type>> TypeMap::get_type(const std::string& name) 
     return std::nullopt;
 }
 std::expected<void, std::string> TypeMap::define(std::shared_ptr<Type> type) {
-    if(const auto& res = get_type(type->get_name()); !res) {
+    if(const auto& res = get_type(type->get_name()); res) {
         return std::unexpected(std::format("Type {} already defined", type->get_name()));
     }
 

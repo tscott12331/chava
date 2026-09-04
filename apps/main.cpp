@@ -7,7 +7,18 @@
 #include <string_view>
 
 int main() {
-    std::string input = R"(
+    std::string input = 
+R"(
+class balesh {
+    String y;
+    init() {}
+    method a(int x, bool y) void {
+        int z;
+        z = x;
+        return;
+    }
+}
+
 int x;
 x = (5 + 2) + 7 - 6 / 2;
 while(x - 2 > 5 * 2 * 6 - (5+2) - 5 == x + 5 < 7) {
@@ -40,6 +51,7 @@ while(x - 2 > 5 * 2 * 6 - (5+2) - 5 == x + 5 < 7) {
     std::cout << program->stmts.size() << " stmts\n";
 
     if(auto typecheck_res = TypeChecker::Typecheck(program.value()); !typecheck_res) {
+        std::cout << "TYPE ERROR: ";
         std::cout << typecheck_res.error() << "\n";
     }
 }

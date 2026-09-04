@@ -39,6 +39,7 @@ std::expected<std::vector<ClassDef>, std::string> Parser::parse_classdefs() {
             return std::unexpected(classdef.error());
         }
 
+        classdefs.push_back(classdef.value());
         token = get_token_of(TokenType::ClassToken);
     }
 
