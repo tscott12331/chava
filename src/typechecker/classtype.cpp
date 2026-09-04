@@ -149,8 +149,12 @@ std::expected<void, std::string> ClassType::check_super_args(const TypeList& arg
         return std::unexpected(create_error(pos, "Cannot call super constructor on base class"));
     }
 
-    if(!args.can_assign_to(parent.value()->constructor_args)) {
-        return std::unexpected(create_error(pos, std::format("Super arguments do not match {} class constructor", parent.value()->get_name())));
+    return parent.value()->check_constructor_args(args, pos);
+}
+
+std::expected<void, std::string> ClassType::check_constructor_args(const TypeList& args, const Position& pos) {
+    if(!args.can_assign_to(constructor_args)) {
+        return std::unexpected(create_error(pos, std::format("Arguments do not match {} class constructor", parent.value()->get_name())));
     }
 
     return {};

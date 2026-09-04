@@ -19,15 +19,22 @@ class balesh {
     }
 }
 
+class baylesh extends balesh {
+    init(balesh b, int x) { super(); }
+}
+
 int x;
 x = (5 + 2) + 7 - 6 / 2;
+balesh b;
+b = new balesh();
+baylesh g;
+g = new baylesh(b, 5);
 while(x - 2 > 5 * 2 * 6 - (5+2) - 5 == x + 5 < 7) {
     x = x + 1;
     if(x == 7) {
     } else {
     }
 }
-
 )";
     int line_num = 1;
     for(const auto line : std::views::split(input, '\n')) {

@@ -40,10 +40,13 @@ public:
     TypeMap(const std::vector<std::shared_ptr<Type>>& types);
 
     std::optional<std::shared_ptr<Type>> get_type(const std::string&);
+    std::optional<std::shared_ptr<Type>> get_built_in(const std::string&);
     std::expected<void, std::string> define(std::shared_ptr<Type> type);
     const std::unordered_map<std::string, std::shared_ptr<Type>>& types() const;
+    const std::unordered_map<std::string, std::shared_ptr<Type>>& built_ins() const;
 private:
     std::unordered_map<std::string, std::shared_ptr<Type>> _types;
+    std::unordered_map<std::string, std::shared_ptr<Type>> _built_ins;
 };
 
 bool types_equal(const std::shared_ptr<Type> left, const std::shared_ptr<Type> right);
@@ -141,6 +144,7 @@ public:
     std::expected<void, std::string> populate(TypeMap& type_map);
     
     std::expected<void, std::string> check_super_args(const TypeList& args, const Position& pos);
+    std::expected<void, std::string> check_constructor_args(const TypeList& args, const Position& pos);
 private:
     std::expected<void, std::string> populate_fields(TypeMap& type_map);
     std::expected<void, std::string> populate_methods(TypeMap& type_map);

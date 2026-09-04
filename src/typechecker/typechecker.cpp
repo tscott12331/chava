@@ -97,8 +97,8 @@ std::expected<void, std::string> TypeChecker::typecheck() {
 }
 
 std::expected<void, std::string> TypeChecker::initialize_typemap(std::unordered_map<std::string, ClassDef>& known_classes) {
-    std::unordered_set<std::string> created_types;
     for(const auto [_, cd] : known_classes) {
+        std::unordered_set<std::string> created_types;
         const auto class_name = std::string(cd.value.class_name);
         const auto define_res = define_type(class_name, known_classes, created_types);
         if(!define_res) {
@@ -120,12 +120,31 @@ std::expected<std::shared_ptr<ClassType>, std::string> TypeChecker::define_type(
         return std::unexpected(create_error(cd, "Cyclical inheritance detected"));
     }
 
+    if(const auto& bi_res = type_map.get_built_in(class_name); bi_res) {
+        return std::unexpected(create_error(cd, std::format("Attempting to redefine built-in type {}", bi_res.value()->get_name())));
+    }
+
+    if(const auto& df_res = type_map.get_type(class_name); df_res) {
+        if(const auto df_ct = std::dynamic_pointer_cast<ClassType>(df_res.value()); df_ct != nullptr) {
+            return df_ct;
+        }
+        return std::unexpected(create_error(cd, std::format("Attempting to redefine primitive type {}", df_res.value()->get_name())));
+    }
+
     created_types.insert(class_name);
     
     std::optional<std::shared_ptr<ClassType>> parent = std::nullopt;
     if(cd.value.extend_class_name) {
         const auto extend_name = std::string(cd.value.extend_class_name.value());
-        if(const auto parent_res = define_type(extend_name, known_classes, created_types); !parent_res) {
+        const auto existing = type_map.get_type(extend_name);
+
+        if(existing) {
+            const auto existing_class = std::dynamic_pointer_cast<ClassType>(existing.value());
+            if(existing_class == nullptr) {
+                return std::unexpected(create_error(cd, std::format("Cannot extend class with primitive type {}", existing.value()->get_name())));
+            }
+            parent = existing_class;
+        } else if(const auto parent_res = define_type(extend_name, known_classes, created_types); !parent_res) {
             return parent_res;
         } else {
             parent = parent_res.value();
@@ -428,10 +447,18 @@ std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_new_obj_e
         return std::unexpected(create_error(exp, std::format("New object class {} doesn't exist", exp.value->class_name)));
     }
 
-    // TODO: check constructor
+    const auto class_type = std::dynamic_pointer_cast<ClassType>(obj_type.value());
+    if(class_type == nullptr) {
+        return std::unexpected(create_error(exp, std::format("Cannot instantiate object of non class type {}", obj_type.value()->get_name())));
+    }
 
-    return std::unexpected("not implemented");
-    // return obj_type.value();
+    // TODO: check constructor
+    const auto args = args_to_type_list(exp.value->args);
+    if(const auto& res = class_type->check_constructor_args(args.value(), exp.pos); !res) {
+        return std::unexpected(res.error());
+    }
+
+    return class_type;
 }
 
 std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_method_call_exp(const PositionWrapper<std::shared_ptr<MethodCallExp>>& exp) {
