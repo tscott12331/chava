@@ -15,8 +15,9 @@ class C extends B { init () { super(); } }
 class Test {
     init() {}
 
-    method a(B p1, A p2, B p3) void {}
-    method a(A p1, C p2, B p3) void {}
+    method a(B p1, A p2, B p3) C { return new C(); }
+    method a(A p1, C p2, B p3) B { return new B(); }
+    method a(C p1, C p2, C p3) int { return 5; }
 }
 
 A a;
@@ -28,7 +29,8 @@ c = new C();
 Test t;
 t = new Test();
 
-t.a(b, c, b);
+B x;
+x = t.a(a, c, c);
 )";
 
     int line_num = 1;

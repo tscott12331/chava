@@ -74,8 +74,7 @@ bool TypeList::can_assign_to(const TypeList& other) const {
 TypeListPrecision TypeList::compare(const TypeList& other) const {
     if(_types.size() != other._types.size()) return TypeListPrecision::Uncomparable;
 
-    uint min_depth_this = std::numeric_limits<uint>::max();
-    uint min_depth_other = std::numeric_limits<uint>::max();
+    auto t_state = TypeListPrecision::Ambiguous;
     for(const auto [i, t] : std::views::enumerate(_types)) {
         const auto ot = other._types.at(i);
         if(!t->is_subtype_of(ot) && !ot->is_subtype_of(t)) {
@@ -85,13 +84,22 @@ TypeListPrecision TypeList::compare(const TypeList& other) const {
         // we only want to consider depths that differ between the types
         if(t->get_depth() == ot->get_depth()) continue;
 
-        if(t->get_depth() < min_depth_this) min_depth_this = t->get_depth();
-        if(ot->get_depth() < min_depth_other) min_depth_other = ot->get_depth();
+        if(t->get_depth() > ot->get_depth()) {
+            if(t_state == TypeListPrecision::Less) {
+                // t was previously less precise, but we encountered 
+                // a type where it is more; ambiguous
+                return TypeListPrecision::Ambiguous;
+            }
+            t_state = TypeListPrecision::More;
+        } else {
+            if(t_state == TypeListPrecision::More) {
+                // t was previously more precise, but we encountered 
+                // a type where it is less; ambiguous
+                return TypeListPrecision::Ambiguous;
+            }
+            t_state = TypeListPrecision::Less;
+        }
     }
 
-    return min_depth_this < min_depth_other
-        ? TypeListPrecision::More
-        : min_depth_this > min_depth_other
-        ? TypeListPrecision::Less
-        : TypeListPrecision::Ambiguous;
+    return t_state;
 }
