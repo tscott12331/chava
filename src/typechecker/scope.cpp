@@ -2,8 +2,8 @@
 #include <format>
 #include <memory>
 Scope::Scope() {}
-Scope::Scope(std::shared_ptr<Scope> parent, std::optional<std::shared_ptr<Type>> ret_type, bool is_while) 
-            : parent(parent), _ret_type(ret_type), _is_while(is_while) {}
+Scope::Scope(std::shared_ptr<Scope> parent, std::optional<std::shared_ptr<Type>> ret_type, std::optional<bool> is_while) 
+            : parent(parent), _ret_type(ret_type), _is_while(is_while.has_value() ? is_while.value() : false) {}
 
 constexpr auto THIS = "this";
 

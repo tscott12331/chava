@@ -12,10 +12,10 @@ R"(
 class balesh {
     String y;
     init() {}
-    method a(int x, bool y) void {
+    method a(int x, bool y) int {
         int z;
         z = x;
-        return;
+        return z;
     }
 }
 
@@ -29,6 +29,9 @@ balesh b;
 b = new balesh();
 baylesh g;
 g = new baylesh(b, 5);
+
+int xyz;
+xyz = g.a(5, false);
 while(x - 2 > 5 * 2 * 6 - (5+2) - 5 == x + 5 < 7) {
     x = x + 1;
     if(x == 7) {

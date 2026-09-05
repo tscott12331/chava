@@ -91,10 +91,10 @@ struct MethodCallExp {
     MethodCallExp(Exp& target, std::string_view method_name, CommaExp& args) : 
                     target(std::move(target)), method_name(method_name), args(std::move(args)) {}
     // annotation
-    void annotate_ret_type(ParsedType ret_type);
+    void annotate_ret_type(const std::string& string);
 
 private:
-    std::optional<ParsedType> ret_type = std::nullopt;
+    std::optional<std::string> ret_type = std::nullopt;
 };
 
 

@@ -13,13 +13,15 @@
 #include <vector>
 #include <ranges>
 
+class MethodSignature;
+
 class Type {
 public:
-    Type(std::string name) : name(name) {};
+    Type(std::string name, uint depth) : name(name), depth(depth) {};
 
     const std::string& get_name() const;
-    uint get_depth();
-    virtual std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_ret(MethodCallExp& method_call) = 0;
+    uint get_depth() const;
+    virtual std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_ret(const MethodSignature& method_signature, const Position& pos) = 0;
     virtual bool is_subtype_of(std::shared_ptr<Type> other) = 0;
 
     bool operator==(const Type& other) const {
@@ -62,12 +64,20 @@ std::string create_error(const PositionWrapper<T>& node, std::string_view messag
 }
 
 
+enum class TypeListPrecision {
+    More,
+    Less,
+    Ambiguous,
+    Uncomparable, // diff param count, types are not covariant, etc.
+};
+
 class TypeList {
 public:
     TypeList();
     TypeList(const std::vector<std::shared_ptr<Type>>& types);
     bool can_assign_to(const TypeList& other) const;
     std::vector<std::shared_ptr<Type>> types() const;
+    TypeListPrecision compare(const TypeList& other) const;
 
     bool operator==(const TypeList& other) const {
         if(_types.size() != other._types.size()) return false;
@@ -86,6 +96,8 @@ private:
 
 class MethodSignature {
 public:
+    MethodSignature(const std::string& name, const TypeList& params, std::shared_ptr<Type> ret_type);
+
     bool has_same_params(const MethodSignature& other) const;
     bool can_override(const MethodSignature& other) const;
 
@@ -108,7 +120,6 @@ private:
     std::string _name;
     TypeList _params;
     std::shared_ptr<Type> _ret_type;
-    MethodSignature(const std::string& name, const TypeList& params, std::shared_ptr<Type> ret_type);
 };
 
 struct MethodSignatureHash {
@@ -129,7 +140,7 @@ class PrimitiveType : public Type {
 public:
     PrimitiveType(std::string name);
 
-    std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_ret(MethodCallExp& method_call) override;
+    std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_ret(const MethodSignature& method_signature, const Position& pos) override;
     bool is_subtype_of(std::shared_ptr<Type> other) override;
 };
 
@@ -138,7 +149,7 @@ class ClassType : public Type {
 public:
     ClassType(const ClassDef& classdef);
     ClassType(const ClassDef& classdef, std::optional<std::shared_ptr<ClassType>> parent);
-    std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_ret(MethodCallExp& method_call) override;
+    std::expected<std::shared_ptr<Type>, std::string> resolve_method_call_ret(const MethodSignature& method_signature, const Position& pos) override;
     bool is_subtype_of(std::shared_ptr<Type> other) override;
 
     std::expected<void, std::string> populate(TypeMap& type_map);
@@ -167,7 +178,7 @@ private:
 class Scope {
 public:
     Scope();
-    Scope(std::shared_ptr<Scope> parent, std::optional<std::shared_ptr<Type>> ret_type=std::nullopt, bool is_while=false);
+    Scope(std::shared_ptr<Scope> parent, std::optional<std::shared_ptr<Type>> ret_type=std::nullopt, std::optional<bool> is_while=false);
     std::expected<void, std::string> define(const std::string& var_name, std::shared_ptr<Type> type, const Position& pos);
     std::expected<void, std::string> define(const Vardec& vardec, TypeMap& type_map);
     std::expected<std::shared_ptr<Type>, std::string> get_var_type(std::string& var_name, const Position& pos);
@@ -239,7 +250,7 @@ private:
     std::expected<void, std::string> add_params_to_scope(const CommaVardec& params);
     std::expected<TypeList, std::string> args_to_type_list(const CommaExp& args);
 
-    void enter_scope(std::optional<std::shared_ptr<Type>> ret_type=std::nullopt, bool is_while=false);
+    void enter_scope(std::optional<std::shared_ptr<Type>> ret_type=std::nullopt, std::optional<bool> is_while=std::nullopt);
     void exit_scope();
 };
 

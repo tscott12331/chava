@@ -1,6 +1,7 @@
 #include <chava/typechecker.hpp>
 #include <expected>
 #include <format>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <variant>
@@ -33,14 +34,18 @@ std::vector<std::shared_ptr<Type>> built_ins = {
     TypeChecker::bi_object,
 };
 
-PrimitiveType::PrimitiveType(std::string name) : Type(name) {}
+PrimitiveType::PrimitiveType(std::string name) : Type(name, 0) {}
 
 const std::string& Type::get_name() const {
     return name;
 }
 
-std::expected<std::shared_ptr<Type>, std::string> PrimitiveType::resolve_method_call_ret(MethodCallExp& method_call) {
-    return std::unexpected("not implemented");
+uint Type::get_depth() const {
+    return depth;
+}
+
+std::expected<std::shared_ptr<Type>, std::string> PrimitiveType::resolve_method_call_ret(const MethodSignature& method_signature, const Position& pos) {
+    return std::unexpected(create_error(pos, std::format("Cannot call method on primitive type", get_name())));
 }
 
 bool PrimitiveType::is_subtype_of(std::shared_ptr<Type> other) {
@@ -462,7 +467,26 @@ std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_new_obj_e
 }
 
 std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_method_call_exp(const PositionWrapper<std::shared_ptr<MethodCallExp>>& exp) {
-    return std::unexpected("not implemented");
+    // MethodSignature(const std::string& name, const TypeList& params, std::shared_ptr<Type> ret_type);
+    const auto target_type = resolve_exp_type(exp.value->target);
+    if(!target_type) {
+        return std::unexpected(target_type.error());
+    }
+
+    const auto method_name = std::string(exp.value->method_name);
+    const auto method_args = args_to_type_list(exp.value->args);
+    if(!method_args) {
+        return std::unexpected(method_args.error());
+    }
+
+    const auto query_signature = MethodSignature(method_name, method_args.value(), nullptr);
+
+    const auto ret_type = target_type.value()->resolve_method_call_ret(query_signature, exp.pos);
+    if(!ret_type) {
+        return std::unexpected(ret_type.error());
+    }
+    exp.value->annotate_ret_type(ret_type.value()->get_name());
+    return ret_type.value();
 }
 
 std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_binary_exp(const PositionWrapper<std::shared_ptr<BinaryExp>>& exp) {
@@ -557,8 +581,12 @@ std::expected<std::shared_ptr<Type>, std::string> TypeChecker::resolve_eq_exp(st
     return TypeChecker::pr_bool;
 }
 
-void TypeChecker::enter_scope(std::optional<std::shared_ptr<Type>> ret_type, bool is_while) {
-    scope = std::make_shared<Scope>(Scope(scope));
+void TypeChecker::enter_scope(std::optional<std::shared_ptr<Type>> ret_type, std::optional<bool> is_while) {
+    // persist previous scope options if unset
+    if(!ret_type) ret_type = scope->ret_type();
+    if(!is_while.has_value()) is_while = scope->is_while();
+
+    scope = std::make_shared<Scope>(Scope(scope, ret_type, is_while));
 }
 
 void TypeChecker::exit_scope() {

@@ -3,8 +3,10 @@
 
 ClassType::ClassType(const ClassDef& classdef) : ClassType(classdef, std::nullopt) {}
 ClassType::ClassType(const ClassDef& classdef, std::optional<std::shared_ptr<ClassType>> parent)
-    : Type(std::string(classdef.value.class_name)), classdef(classdef), parent(parent) {
-}
+    : Type(std::string(classdef.value.class_name),
+           parent ? parent.value()->get_depth()+1 : 0),
+    classdef(classdef), parent(parent)
+{}
 
 bool ClassType::is_subtype_of(std::shared_ptr<Type> other) {
     if(other->get_name() == get_name()) {
@@ -18,8 +20,41 @@ bool ClassType::is_subtype_of(std::shared_ptr<Type> other) {
     return false;
 }
 
-std::expected<std::shared_ptr<Type>, std::string> ClassType::resolve_method_call_ret(MethodCallExp& method_call) {
-    return std::unexpected("not implemented");
+std::expected<std::shared_ptr<Type>, std::string> ClassType::resolve_method_call_ret(const MethodSignature& method_signature, const Position& pos) {
+    if(!methods.contains(method_signature.name())) {
+        if(parent) {
+            return parent.value()->resolve_method_call_ret(method_signature, pos);
+        }
+
+        return std::unexpected(create_error(pos, std::format("Class {} does not contain method named {}", get_name(), method_signature.name())));
+    }
+
+    const auto& same_name = methods[method_signature.name()];
+    std::optional<MethodSignature> most_precise = std::nullopt;
+
+    for(const auto& ms : same_name) {
+        if(!method_signature.params().can_assign_to(ms.params())) continue;
+
+        if(!most_precise) {
+            most_precise = ms;
+            continue;
+        }
+
+        const auto compare_res = ms.params().compare(most_precise.value().params());
+        if(compare_res == TypeListPrecision::More) {
+            most_precise = ms;
+        } else if(compare_res == TypeListPrecision::Ambiguous) {
+            return std::unexpected(create_error(pos, "Ambiguous method call"));
+        }
+    }
+    if(!most_precise) {
+        if(parent) {
+            return parent.value()->resolve_method_call_ret(method_signature, pos);
+        }
+
+        return std::unexpected(create_error(pos, std::format("Method call does not match any methods in {}", get_name())));
+    }
+    return most_precise.value().ret_type();
 }
 
 std::expected<void, std::string> ClassType::populate(TypeMap& type_map) {

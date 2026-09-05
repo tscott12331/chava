@@ -436,7 +436,7 @@ std::expected<Exp, std::string> Parser::parse_new_obj_exp() {
 }
 
 
-void MethodCallExp::annotate_ret_type(ParsedType ret_type) {
+void MethodCallExp::annotate_ret_type(const std::string& ret_type) {
     this->ret_type = ret_type;
 }
 

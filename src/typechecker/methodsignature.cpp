@@ -1,5 +1,6 @@
 #include <chava/typechecker.hpp>
 #include <format>
+#include <limits>
 #include <ranges>
 
 MethodSignature::MethodSignature(const std::string& name, const TypeList& params, std::shared_ptr<Type> ret_type) 
@@ -68,4 +69,29 @@ bool TypeList::can_assign_to(const TypeList& other) const {
     }
 
     return true;
+}
+
+TypeListPrecision TypeList::compare(const TypeList& other) const {
+    if(_types.size() != other._types.size()) return TypeListPrecision::Uncomparable;
+
+    uint min_depth_this = std::numeric_limits<uint>::max();
+    uint min_depth_other = std::numeric_limits<uint>::max();
+    for(const auto [i, t] : std::views::enumerate(_types)) {
+        const auto ot = other._types.at(i);
+        if(!t->is_subtype_of(ot) && !ot->is_subtype_of(t)) {
+            return TypeListPrecision::Uncomparable;
+        }
+
+        // we only want to consider depths that differ between the types
+        if(t->get_depth() == ot->get_depth()) continue;
+
+        if(t->get_depth() < min_depth_this) min_depth_this = t->get_depth();
+        if(ot->get_depth() < min_depth_other) min_depth_other = ot->get_depth();
+    }
+
+    return min_depth_this < min_depth_other
+        ? TypeListPrecision::More
+        : min_depth_this > min_depth_other
+        ? TypeListPrecision::Less
+        : TypeListPrecision::Ambiguous;
 }
