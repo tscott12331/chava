@@ -1,7 +1,6 @@
 #include <chava/typechecker.hpp>
 #include <expected>
 #include <format>
-#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <variant>
@@ -212,6 +211,8 @@ std::expected<void, std::string> TypeChecker::check_constructor(const Constructo
         if(const auto& res = type->check_super_args(super_type_list.value(), constructor.value.super_args->pos); !res) {
             return res;
         }
+    } else if(type->parent()) {
+        return std::unexpected(create_error(constructor, std::format("Constructor missing super call for inherited class {}", type->parent().value()->get_name())));
     }
 
     for(const auto& stmt : constructor.value.stmts) {

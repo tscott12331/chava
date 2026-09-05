@@ -156,6 +156,8 @@ public:
     
     std::expected<void, std::string> check_super_args(const TypeList& args, const Position& pos);
     std::expected<void, std::string> check_constructor_args(const TypeList& args, const Position& pos);
+
+    const std::optional<std::shared_ptr<ClassType>>& parent() const;
 private:
     std::expected<void, std::string> populate_fields(TypeMap& type_map);
     std::expected<void, std::string> populate_methods(TypeMap& type_map);
@@ -166,7 +168,7 @@ private:
 
     bool has_field(const std::string& field_name);
 
-    std::optional<std::shared_ptr<ClassType>> parent;
+    std::optional<std::shared_ptr<ClassType>> _parent;
     std::unordered_map<std::string, std::shared_ptr<Type>> fields;
     TypeList constructor_args;
     std::unordered_map<std::string, std::unordered_set<MethodSignature, MethodSignatureHash>> methods;

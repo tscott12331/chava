@@ -5,7 +5,7 @@ ClassType::ClassType(const ClassDef& classdef) : ClassType(classdef, std::nullop
 ClassType::ClassType(const ClassDef& classdef, std::optional<std::shared_ptr<ClassType>> parent)
     : Type(std::string(classdef.value.class_name),
            parent ? parent.value()->get_depth()+1 : 0),
-    classdef(classdef), parent(parent)
+    classdef(classdef), _parent(parent)
 {}
 
 bool ClassType::is_subtype_of(std::shared_ptr<Type> other) {
@@ -13,8 +13,8 @@ bool ClassType::is_subtype_of(std::shared_ptr<Type> other) {
         return true;
     }
     
-    if(parent.has_value()) {
-        return parent.value()->is_subtype_of(other);
+    if(_parent.has_value()) {
+        return _parent.value()->is_subtype_of(other);
     }
 
     return false;
@@ -22,8 +22,8 @@ bool ClassType::is_subtype_of(std::shared_ptr<Type> other) {
 
 std::expected<std::shared_ptr<Type>, std::string> ClassType::resolve_method_call_ret(const MethodSignature& method_signature, const Position& pos) {
     if(!methods.contains(method_signature.name())) {
-        if(parent) {
-            return parent.value()->resolve_method_call_ret(method_signature, pos);
+        if(_parent) {
+            return _parent.value()->resolve_method_call_ret(method_signature, pos);
         }
 
         return std::unexpected(create_error(pos, std::format("Class {} does not contain method named {}", get_name(), method_signature.name())));
@@ -48,8 +48,8 @@ std::expected<std::shared_ptr<Type>, std::string> ClassType::resolve_method_call
         }
     }
     if(!most_precise) {
-        if(parent) {
-            return parent.value()->resolve_method_call_ret(method_signature, pos);
+        if(_parent) {
+            return _parent.value()->resolve_method_call_ret(method_signature, pos);
         }
 
         return std::unexpected(create_error(pos, std::format("Method call does not match any methods in {}", get_name())));
@@ -119,8 +119,8 @@ std::expected<void, std::string> ClassType::populate_methods(TypeMap& type_map) 
         if(const auto res = check_redeclaration(method_signature.value(), md.pos); !res) {
             return res;
         }
-        if(parent) {
-            if(const auto res = parent.value()->check_override(method_signature.value(), md.pos); !res) {
+        if(_parent) {
+            if(const auto res = _parent.value()->check_override(method_signature.value(), md.pos); !res) {
                 return res;
             }
         }
@@ -167,8 +167,8 @@ std::expected<void, std::string> ClassType::check_override(const MethodSignature
         }
     }
     
-    if(parent) {
-        return parent.value()->check_override(method_signature, pos);
+    if(_parent) {
+        return _parent.value()->check_override(method_signature, pos);
     }
 
     return {};
@@ -176,21 +176,25 @@ std::expected<void, std::string> ClassType::check_override(const MethodSignature
 
 bool ClassType::has_field(const std::string& field_name) {
     return fields.contains(field_name) ||
-          (parent && parent.value()->has_field(field_name));
+          (_parent && _parent.value()->has_field(field_name));
 }
 
 std::expected<void, std::string> ClassType::check_super_args(const TypeList& args, const Position& pos) {
-    if(!parent) {
+    if(!_parent) {
         return std::unexpected(create_error(pos, "Cannot call super constructor on base class"));
     }
 
-    return parent.value()->check_constructor_args(args, pos);
+    return _parent.value()->check_constructor_args(args, pos);
 }
 
 std::expected<void, std::string> ClassType::check_constructor_args(const TypeList& args, const Position& pos) {
     if(!args.can_assign_to(constructor_args)) {
-        return std::unexpected(create_error(pos, std::format("Arguments do not match {} class constructor", parent.value()->get_name())));
+        return std::unexpected(create_error(pos, std::format("Arguments do not match {} class constructor", _parent.value()->get_name())));
     }
 
     return {};
+}
+
+const std::optional<std::shared_ptr<ClassType>>& ClassType::parent() const {
+    return _parent;
 }

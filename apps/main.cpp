@@ -9,36 +9,28 @@
 int main() {
     std::string input = 
 R"(
-class balesh {
-    String y;
+class A { init() {} }
+class B extends A { init() { super(); } }
+class C extends B { init () { super(); } }
+class Test {
     init() {}
-    method a(int x, bool y) int {
-        int z;
-        z = x;
-        return z;
-    }
+
+    method a(B p1, A p2, B p3) void {}
+    method a(A p1, C p2, B p3) void {}
 }
 
-class baylesh extends balesh {
-    init(balesh b, int x) { super(); }
-}
+A a;
+a = new A();
+B b;
+b = new B();
+C c;
+c = new C();
+Test t;
+t = new Test();
 
-int x;
-x = (5 + 2) + 7 - 6 / 2;
-balesh b;
-b = new balesh();
-baylesh g;
-g = new baylesh(b, 5);
-
-int xyz;
-xyz = g.a(5, false);
-while(x - 2 > 5 * 2 * 6 - (5+2) - 5 == x + 5 < 7) {
-    x = x + 1;
-    if(x == 7) {
-    } else {
-    }
-}
+t.a(b, c, b);
 )";
+
     int line_num = 1;
     for(const auto line : std::views::split(input, '\n')) {
         std::cout << std::format("{:>3}| {}\n", line_num, std::string_view(line.data(), line.size()));
