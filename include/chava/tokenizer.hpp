@@ -7,6 +7,12 @@
 #include <vector>
 #include "common.hpp"
 
+#if defined(_WIN32) || defined(_WIN64)
+    constexpr std::string newline = "\r\n";
+#else
+    constexpr std::string newline = "\n";
+#endif
+
 enum class TokenType {
     // types
     IntToken,
@@ -86,5 +92,11 @@ private:
 };
 
 std::string_view token_to_string(Token token);
+
+bool is_horizontal_space(std::string_view s);
+bool is_vertical_space(std::string_view s);
+bool is_newline(std::string_view s);
+bool is_valid_keyword_or_ident_char(char c);
+bool is_num(char c);
 
 #endif
