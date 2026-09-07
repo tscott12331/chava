@@ -9,5 +9,11 @@ int main() {
         Test::run_test(test_is_newline, "newline detection"),
         Test::run_test(test_is_valid_keyword_or_ident_char, "keyword/identifier character detection"),
         Test::run_test(test_is_num, "number detection"),
+        Test::run_test(test_type_tokens, "type tokens"),
+        Test::run_test(test_control_flow_tokens, "control flow tokens"),
+        Test::run_test(test_op_tokens, "op tokens"),
+        Test::run_test(test_literal_tokens, "literal tokens"),
+        Test::run_test(test_class_tokens, "class tokens"),
+        Test::run_test(test_symbol_tokens, "symbol tokens"),
     }) << std::endl;
 }

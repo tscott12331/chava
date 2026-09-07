@@ -220,7 +220,7 @@ bool is_valid_keyword_or_ident_char(char c) {
 }
 
 
-std::string_view token_to_string(Token token) {
+std::string_view token_to_string(const Token& token) {
     switch(token.type) {
         case TokenType::IntToken:
             return "int";

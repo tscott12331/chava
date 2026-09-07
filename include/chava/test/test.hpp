@@ -11,10 +11,10 @@ namespace Test {
     using test_fn = std::function<test_fn_ret()>;
     using assert_res = std::expected<void, std::string>;
 
-    template<typename T>
+    template<std::formattable<char> T>
     Test::assert_res assert_eq(const T& expected, const T& actual) {
         if(expected != actual) {
-            return std::unexpected(std::format("Expected {} to equal {}", actual, expected));
+            return std::unexpected(std::format("Expected {}, got {}", expected, actual));
         }
         return {};
     }

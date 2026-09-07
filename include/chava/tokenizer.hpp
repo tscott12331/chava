@@ -48,7 +48,7 @@ enum class TokenType {
     ThisToken,
     SuperToken,
 
-    // syntax
+    // symbol
     CommaToken,
     LParenToken,
     RParenToken,
@@ -67,6 +67,10 @@ struct Token {
     TokenType type;
     std::string_view raw;
     Position pos;
+
+    bool operator==(const Token &other) const {
+        return type == other.type && raw == other.raw && pos == other.pos;
+    }
 };
 
 
@@ -91,7 +95,7 @@ private:
     std::string format_error(std::string_view message);
 };
 
-std::string_view token_to_string(Token token);
+std::string_view token_to_string(const Token& token);
 
 bool is_horizontal_space(std::string_view s);
 bool is_vertical_space(std::string_view s);
