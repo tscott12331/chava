@@ -1,4 +1,5 @@
 #include "chava/exp.hpp"
+#include "chava/test/test.hpp"
 #include "chava/tokenizer.hpp"
 #include <chava/parser.hpp>
 #include <chava/stmt.hpp>
@@ -125,7 +126,45 @@ Test::test_fn_ret test_parse_prim_exp() {
 
     return Test::get_result_ret(results);
 }
-Test::test_fn_ret test_parse_call_exp();
+
+Test::test_fn_ret test_parse_call_exp() {
+    std::vector<std::string> results;
+
+    Test::collect_assert(results, Test::assert_eq(
+        Stmt{
+            .value=ExpStmt{
+                .exp=Exp{
+                    .value=std::make_shared<MethodCallExp>(MethodCallExp(
+                        Exp{
+                            .value=VarExp("a"),
+                            .pos=Position{.line=1,.col=1}
+                        },
+                        "b",
+                        CommaExp{
+                            .value=CommaExpValue{
+                                .exps=std::vector<Exp>{
+                                    Exp{
+                                        .value=NumLitExp{
+                                            .val=5
+                                        },
+                                        .pos=Position{.line=1,.col=5}
+                                    }
+                                 }
+                            },
+                            .pos=Position{.line=1,.col=5}
+                        }
+                    )),
+                    .pos=Position{.line=1,.col=1}
+                }
+            },
+            .pos=Position{.line=1,.col=1}
+        },
+        Parser::Parse(Tokenizer::Tokenize("a.b(5);").value()).value().stmts.at(0)
+    ));
+
+    return Test::get_result_ret(results);
+}
+
 Test::test_fn_ret test_parse_mult_exp();
 Test::test_fn_ret test_parse_add_exp();
 Test::test_fn_ret test_parse_comp_exp();

@@ -105,7 +105,7 @@ struct MethodCallExp {
     std::string_view method_name;
     CommaExp args;
 
-    MethodCallExp(Exp& target, std::string_view method_name, CommaExp& args) : 
+    MethodCallExp(const Exp& target, std::string_view method_name, const CommaExp& args) : 
                     target(std::move(target)), method_name(method_name), args(std::move(args)) {}
     // annotation
     void annotate_ret_type(const std::string& string);

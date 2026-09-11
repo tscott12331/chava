@@ -18,5 +18,6 @@ int main() {
         Test::run_test(test_symbol_tokens, "symbol tokens"),
 
         Test::run_test(test_parse_prim_exp, "primary expression parsing"),
+        Test::run_test(test_parse_call_exp, "method call expression parsing"),
     }) << std::endl;
 }
