@@ -28,4 +28,20 @@ namespace Test {
     std::string summarize_tests(const std::vector<test_result>& results);
 
 }
+
+// 2. Formatter for std::vector of that type
+template <typename T>
+struct std::formatter<std::vector<T>> : std::formatter<std::string> {
+    template <typename FormatContext>
+    auto format(const std::vector<T>& vec, FormatContext& ctx) const {
+        std::string result = "[";
+        for (size_t i = 0; i < vec.size(); ++i) {
+            if (i > 0) result += ", ";
+            // Format each element using std::format
+            result += std::format("{}", vec[i]);
+        }
+        result += "]";
+        return std::formatter<std::string>::format(result, ctx);
+    }
+};
 #endif

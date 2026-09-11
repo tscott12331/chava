@@ -10,6 +10,8 @@
 
 struct CommaVardecValue {
     std::vector<Vardec> vardecs;
+
+    bool operator==(const CommaVardecValue& other) const = default;
 };
 
 using CommaVardec = PositionWrapper<CommaVardecValue>;
@@ -19,6 +21,8 @@ struct MethodDefValue {
     CommaVardec params;
     ParsedType ret_type;
     PositionWrapper<std::shared_ptr<BlockStmt>> body;
+
+    bool operator==(const MethodDefValue& other) const = default;
 };
 
 using MethodDef = PositionWrapper<MethodDefValue>;
@@ -27,6 +31,8 @@ struct ConstructorValue {
     CommaVardec params;
     std::optional<CommaExp> super_args;
     std::vector<Stmt> stmts;
+
+    bool operator==(const ConstructorValue& other) const = default;
 };
 
 using Constructor = PositionWrapper<ConstructorValue>;
@@ -37,6 +43,8 @@ struct ClassDefValue {
     std::vector<PositionWrapper<VardecStmt>> vardecs;
     Constructor constructor;
     std::vector<MethodDef> method_defs;
+
+    bool operator==(const ClassDefValue& other) const = default;
 };
 
 using ClassDef = PositionWrapper<ClassDefValue>;

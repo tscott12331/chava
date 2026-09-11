@@ -43,7 +43,7 @@ std::expected<std::vector<ClassDef>, std::string> Parser::parse_classdefs() {
         token = get_token_of(TokenType::ClassToken);
     }
 
-    return std::move(classdefs);
+    return classdefs;
 }
 
 std::expected<std::vector<Stmt>, std::string> Parser::parse_stmts() {
@@ -64,7 +64,7 @@ std::expected<std::vector<Stmt>, std::string> Parser::parse_stmts() {
         return std::unexpected("A program must have at least one statement");
     }
 
-    return std::move(stmts);
+    return stmts;
 }
 
 std::string empty_statement() {

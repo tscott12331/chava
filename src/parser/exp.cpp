@@ -8,6 +8,10 @@
 #include <string_view>
 #include <system_error>
 
+bool operator==(const ExpVariant& left, const ExpVariant& right) {
+    return variant_equal_ignore_shared_ptr(left, right);
+}
+
 std::expected<Exp, std::string> Parser::parse_exp() {
     auto token = get_token();
     if(!token) {
@@ -324,6 +328,7 @@ std::expected<Exp, std::string> Parser::parse_this_exp() {
     if(!token) {
         return std::unexpected(token.error());
     }
+    cursor += 1;
 
     return Exp{
         .value=ThisExp{},

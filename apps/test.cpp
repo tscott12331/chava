@@ -1,4 +1,5 @@
 #include "chava/test/test.hpp"
+#include "chava/test/test_parser.hpp"
 #include <iostream>
 #include <chava/test/test_tokenizer.hpp>
 #include <ostream>
@@ -15,5 +16,7 @@ int main() {
         Test::run_test(test_literal_tokens, "literal tokens"),
         Test::run_test(test_class_tokens, "class tokens"),
         Test::run_test(test_symbol_tokens, "symbol tokens"),
+
+        Test::run_test(test_parse_prim_exp, "primary expression parsing"),
     }) << std::endl;
 }

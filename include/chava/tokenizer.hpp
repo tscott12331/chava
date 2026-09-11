@@ -2,6 +2,7 @@
 #define TOKENIZER_HPP
 
 #include <expected>
+#include <format>
 #include <optional>
 #include <string>
 #include <vector>
@@ -102,5 +103,16 @@ bool is_vertical_space(std::string_view s);
 bool is_newline(std::string_view s);
 bool is_valid_keyword_or_ident_char(char c);
 bool is_num(char c);
+
+
+
+template <>
+struct std::formatter<Token> : std::formatter<std::string> {
+    template <typename FormatContext>
+    auto format(const Token& token, FormatContext& ctx) const {
+        std::string str = std::format("Token('{}')[{}:{}]", token_to_string(token), token.pos.line, token.pos.col);
+        return std::formatter<std::string>::format(str, ctx);
+    }
+};
 
 #endif

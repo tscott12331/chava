@@ -17,6 +17,8 @@ enum class ParsedPrimitiveType {
 
 struct ParsedClassType {
     std::string_view class_name;
+
+    bool operator==(const ParsedClassType& other) const = default;
 };
 
 using ParsedTypeVariant = std::variant<
@@ -33,6 +35,8 @@ std::string to_string(const ParsedClassType& parsed_type);
 struct VardecValue {
     ParsedType type;
     std::string_view var;
+
+    bool operator==(const VardecValue& other) const = default;
 };
 
 using Vardec = PositionWrapper<VardecValue>;
