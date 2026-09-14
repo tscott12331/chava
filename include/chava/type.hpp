@@ -1,13 +1,14 @@
 #ifndef TYPE_HPP
 #define TYPE_HPP
 
-#define INT_NAME "int"
-#define BOOL_NAME "bool"
-#define VOID_NAME "void"
-
+#include <string>
 #include <chava/parser_misc.hpp>
 #include <string_view>
 #include <variant>
+
+constexpr std::string INT_NAME = "int";
+constexpr std::string BOOL_NAME = "bool";
+constexpr std::string VOID_NAME = "void";
 
 enum class ParsedPrimitiveType {
     Int,
