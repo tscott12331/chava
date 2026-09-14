@@ -1,7 +1,6 @@
 #ifndef STMT_HPP
 #define STMT_HPP
 
-#include <format>
 #include <memory>
 #include <optional>
 #include <variant>

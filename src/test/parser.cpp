@@ -165,10 +165,241 @@ Test::test_fn_ret test_parse_call_exp() {
     return Test::get_result_ret(results);
 }
 
-Test::test_fn_ret test_parse_mult_exp();
-Test::test_fn_ret test_parse_add_exp();
-Test::test_fn_ret test_parse_comp_exp();
-Test::test_fn_ret test_parse_eq_exp();
+Test::test_fn_ret test_parse_mult_exp() {
+    std::vector<std::string> results;
+
+    Test::collect_assert(results, Test::assert_eq(
+        Stmt{
+            .value=ExpStmt{
+                .exp=Exp{
+                    .value=std::make_shared<BinaryExp>(BinaryExp{
+                        .left=Exp{
+                            .value=NumLitExp{
+                                .val=5
+                            },
+                            .pos=Position{.line=1,.col=1}
+                        },
+                        .op=Op::Mult,
+                        .right=Exp{
+                            .value=NumLitExp{
+                                .val=9
+                            },
+                            .pos=Position{.line=1,.col=3}
+                        }
+                    }),
+                    .pos=Position{.line=1,.col=1}
+                }
+            },
+            .pos=Position{.line=1,.col=1}
+        },
+        Parser::Parse(Tokenizer::Tokenize("5*9;").value()).value().stmts.at(0)
+    ));
+    Test::collect_assert(results, Test::assert_eq(
+        Stmt{
+            .value=ExpStmt{
+                .exp=Exp{
+                    .value=std::make_shared<BinaryExp>(BinaryExp{
+                        .left=Exp{
+                            .value=NumLitExp{
+                                .val=5
+                            },
+                            .pos=Position{.line=1,.col=1}
+                        },
+                        .op=Op::Div,
+                        .right=Exp{
+                            .value=NumLitExp{
+                                .val=9
+                            },
+                            .pos=Position{.line=1,.col=3}
+                        }
+                    }),
+                    .pos=Position{.line=1,.col=1}
+                }
+            },
+            .pos=Position{.line=1,.col=1}
+        },
+        Parser::Parse(Tokenizer::Tokenize("5/9;").value()).value().stmts.at(0)
+    ));
+
+    return Test::get_result_ret(results);
+}
+
+Test::test_fn_ret test_parse_add_exp() {
+    std::vector<std::string> results;
+
+    Test::collect_assert(results, Test::assert_eq(
+        Stmt{
+            .value=ExpStmt{
+                .exp=Exp{
+                    .value=std::make_shared<BinaryExp>(BinaryExp{
+                        .left=Exp{
+                            .value=NumLitExp{
+                                .val=5
+                            },
+                            .pos=Position{.line=1,.col=1}
+                        },
+                        .op=Op::Add,
+                        .right=Exp{
+                            .value=NumLitExp{
+                                .val=9
+                            },
+                            .pos=Position{.line=1,.col=3}
+                        }
+                    }),
+                    .pos=Position{.line=1,.col=1}
+                }
+            },
+            .pos=Position{.line=1,.col=1}
+        },
+        Parser::Parse(Tokenizer::Tokenize("5+9;").value()).value().stmts.at(0)
+    ));
+    Test::collect_assert(results, Test::assert_eq(
+        Stmt{
+            .value=ExpStmt{
+                .exp=Exp{
+                    .value=std::make_shared<BinaryExp>(BinaryExp{
+                        .left=Exp{
+                            .value=NumLitExp{
+                                .val=5
+                            },
+                            .pos=Position{.line=1,.col=1}
+                        },
+                        .op=Op::Sub,
+                        .right=Exp{
+                            .value=NumLitExp{
+                                .val=9
+                            },
+                            .pos=Position{.line=1,.col=3}
+                        }
+                    }),
+                    .pos=Position{.line=1,.col=1}
+                }
+            },
+            .pos=Position{.line=1,.col=1}
+        },
+        Parser::Parse(Tokenizer::Tokenize("5-9;").value()).value().stmts.at(0)
+    ));
+
+    return Test::get_result_ret(results);
+}
+
+Test::test_fn_ret test_parse_comp_exp() {
+    std::vector<std::string> results;
+
+    Test::collect_assert(results, Test::assert_eq(
+        Stmt{
+            .value=ExpStmt{
+                .exp=Exp{
+                    .value=std::make_shared<BinaryExp>(BinaryExp{
+                        .left=Exp{
+                            .value=NumLitExp{
+                                .val=5
+                            },
+                            .pos=Position{.line=1,.col=1}
+                        },
+                        .op=Op::Lt,
+                        .right=Exp{
+                            .value=NumLitExp{
+                                .val=9
+                            },
+                            .pos=Position{.line=1,.col=3}
+                        }
+                    }),
+                    .pos=Position{.line=1,.col=1}
+                }
+            },
+            .pos=Position{.line=1,.col=1}
+        },
+        Parser::Parse(Tokenizer::Tokenize("5<9;").value()).value().stmts.at(0)
+    ));
+    Test::collect_assert(results, Test::assert_eq(
+        Stmt{
+            .value=ExpStmt{
+                .exp=Exp{
+                    .value=std::make_shared<BinaryExp>(BinaryExp{
+                        .left=Exp{
+                            .value=NumLitExp{
+                                .val=5
+                            },
+                            .pos=Position{.line=1,.col=1}
+                        },
+                        .op=Op::Gt,
+                        .right=Exp{
+                            .value=NumLitExp{
+                                .val=9
+                            },
+                            .pos=Position{.line=1,.col=3}
+                        }
+                    }),
+                    .pos=Position{.line=1,.col=1}
+                }
+            },
+            .pos=Position{.line=1,.col=1}
+        },
+        Parser::Parse(Tokenizer::Tokenize("5>9;").value()).value().stmts.at(0)
+    ));
+
+    return Test::get_result_ret(results);
+}
+
+Test::test_fn_ret test_parse_eq_exp() {
+    std::vector<std::string> results;
+
+    Test::collect_assert(results, Test::assert_eq(
+        Stmt{
+            .value=ExpStmt{
+                .exp=Exp{
+                    .value=std::make_shared<BinaryExp>(BinaryExp{
+                        .left=Exp{
+                            .value=NumLitExp{
+                                .val=5
+                            },
+                            .pos=Position{.line=1,.col=1}
+                        },
+                        .op=Op::Eq,
+                        .right=Exp{
+                            .value=NumLitExp{
+                                .val=9
+                            },
+                            .pos=Position{.line=1,.col=4}
+                        }
+                    }),
+                    .pos=Position{.line=1,.col=1}
+                }
+            },
+            .pos=Position{.line=1,.col=1}
+        },
+        Parser::Parse(Tokenizer::Tokenize("5==9;").value()).value().stmts.at(0)
+    ));
+    Test::collect_assert(results, Test::assert_eq(
+        Stmt{
+            .value=ExpStmt{
+                .exp=Exp{
+                    .value=std::make_shared<BinaryExp>(BinaryExp{
+                        .left=Exp{
+                            .value=NumLitExp{
+                                .val=5
+                            },
+                            .pos=Position{.line=1,.col=1}
+                        },
+                        .op=Op::NotEq,
+                        .right=Exp{
+                            .value=NumLitExp{
+                                .val=9
+                            },
+                            .pos=Position{.line=1,.col=4}
+                        }
+                    }),
+                    .pos=Position{.line=1,.col=1}
+                }
+            },
+            .pos=Position{.line=1,.col=1}
+        },
+        Parser::Parse(Tokenizer::Tokenize("5!=9;").value()).value().stmts.at(0)
+    ));
+
+    return Test::get_result_ret(results);
+}
 
 // stmt
 Test::test_fn_ret test_parse_assign_stmt();

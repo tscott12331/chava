@@ -19,5 +19,9 @@ int main() {
 
         Test::run_test(test_parse_prim_exp, "primary expression parsing"),
         Test::run_test(test_parse_call_exp, "method call expression parsing"),
+        Test::run_test(test_parse_mult_exp, "mult expression parsing"),
+        Test::run_test(test_parse_add_exp, "add expression parsing"),
+        Test::run_test(test_parse_comp_exp, "comparison expression parsing"),
+        Test::run_test(test_parse_eq_exp, "equality expression parsing"),
     }) << std::endl;
 }
