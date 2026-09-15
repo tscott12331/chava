@@ -637,7 +637,44 @@ Test::test_fn_ret test_parse_if_stmt() {
 
     return Test::get_result_ret(results);
 }
-Test::test_fn_ret test_parse_block_stmt();
+Test::test_fn_ret test_parse_block_stmt() {
+    std::vector<std::string> results;
+
+    Test::collect_assert(results, Test::assert_eq(
+        Stmt{
+            .value=std::make_shared<BlockStmt>(BlockStmt{
+                .stmts=std::vector<Stmt>{
+                    Stmt{
+                        .value=ExpStmt{
+                            .exp=Exp{
+                                .value=NumLitExp{
+                                    .val=5
+                                },
+                                .pos=Position{.line=1,.col=2}
+                            }
+                        },
+                        .pos=Position{.line=1,.col=2}
+                    },
+                    Stmt{
+                        .value=ExpStmt{
+                            .exp=Exp{
+                                .value=NumLitExp{
+                                    .val=7
+                                },
+                                .pos=Position{.line=1,.col=4}
+                            }
+                        },
+                        .pos=Position{.line=1,.col=4}
+                    },
+                }
+            }),
+            .pos=Position{.line=1,.col=1}
+        },
+        Parser::Parse(Tokenizer::Tokenize("{5;7;}").value())->stmts.at(0)
+    ));
+
+    return Test::get_result_ret(results);
+}
 
 // class
 Test::test_fn_ret test_parse_classdef();

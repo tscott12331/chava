@@ -35,5 +35,6 @@ int main() {
         Test::run_test(test_parse_while_stmt, "while statement parsing"),
         Test::run_test(test_parse_return_stmt, "return statement parsing"),
         Test::run_test(test_parse_if_stmt, "if statement parsing"),
+        Test::run_test(test_parse_block_stmt, "block statement parsing"),
     }) << std::endl;
 }
