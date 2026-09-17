@@ -2,6 +2,10 @@
 #include <chava/stmt.hpp>
 #include <expected>
 
+bool operator==(const StmtVariant& left, const StmtVariant& right) {
+    return variant_equal_ignore_shared_ptr(left, right);
+}
+
 std::expected<Stmt, std::string> Parser::parse_stmt() {
     if(cursor >= tokens.size()) {
         return std::unexpected("Empty statement");

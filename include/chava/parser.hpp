@@ -1,6 +1,7 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
+#include "chava/common.hpp"
 #include <chava/parser_misc.hpp>
 #include <chava/type.hpp>
 #include <chava/exp.hpp>
@@ -8,6 +9,8 @@
 #include <chava/tokenizer.hpp>
 #include <chava/class.hpp>
 #include <expected>
+#include <format>
+#include <variant>
 #include <vector>
 
 struct Program {
@@ -69,6 +72,26 @@ private:
     std::expected<Token, std::string> get_token();
 
     std::string unexpected_token(Token &token);
+};
+
+// formatter specializations are simple for now
+template <>
+struct std::formatter<Stmt> : std::formatter<std::string> {
+    template <typename FormatContext>
+    auto format(const Stmt& stmt, FormatContext& ctx) const {
+        auto str = std::visit(overloaded {
+            [](const ExpStmt& exp_stmt) -> std::string { return "ExpStmt"; },
+            [](const VardecStmt& exp_stmt) -> std::string { return "VardecStmt"; },
+            [](const AssignStmt& exp_stmt) -> std::string { return "AssignStmt"; },
+            [](const std::shared_ptr<WhileStmt>& exp_stmt) -> std::string { return "WhileStmt"; },
+            [](const std::shared_ptr<BreakStmt>& exp_stmt) -> std::string { return "BreakStmt"; },
+            [](const std::shared_ptr<ReturnStmt>& exp_stmt) -> std::string { return "ReturnStmt"; },
+            [](const std::shared_ptr<IfStmt>& exp_stmt) -> std::string { return "IfStmt"; },
+            [](const std::shared_ptr<BlockStmt>& exp_stmt) -> std::string { return "BlockStmt"; },
+        }, stmt.value);
+
+        return std::formatter<std::string>::format(str, ctx);
+    }
 };
 
 #endif

@@ -8,18 +8,6 @@
 #include <unordered_map>
 #include <vector>
 
-#if defined(_WIN32) || defined(_WIN64)
-    std::string newline = "\r\n";
-#else
-    std::string newline = "\n";
-#endif
-
-bool is_horizontal_space(std::string_view s);
-bool is_vertical_space(std::string_view s);
-bool is_newline(std::string_view s);
-bool is_valid_keyword_or_ident_char(char c);
-bool is_num(char c);
-
 std::unordered_map<std::string_view, TokenType> keyword_map = {
     {"int", TokenType::IntToken},
     {"bool", TokenType::BoolToken},
@@ -232,7 +220,7 @@ bool is_valid_keyword_or_ident_char(char c) {
 }
 
 
-std::string_view token_to_string(Token token) {
+std::string_view token_to_string(const Token& token) {
     switch(token.type) {
         case TokenType::IntToken:
             return "int";
