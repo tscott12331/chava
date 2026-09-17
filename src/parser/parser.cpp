@@ -1,6 +1,7 @@
 #include <chava/tokenizer.hpp>
 #include <chava/parser.hpp>
 #include <format>
+#include <iostream>
 #include <vector>
 
 std::string empty_statement();
@@ -24,6 +25,7 @@ std::expected<Program, std::string> Parser::parse() {
         return std::unexpected(stmts_res.error());
     }
 
+    std::cout << "program parsed\n";
     return Program{
         .classdefs=std::move(classdefs_res.value()),
         .stmts=std::move(stmts_res.value()),

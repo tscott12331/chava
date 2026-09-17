@@ -4,6 +4,7 @@
 #include <chava/stmt.hpp>
 #include <chava/parser_misc.hpp>
 #include <chava/exp.hpp>
+#include <format>
 #include <optional>
 #include <string_view>
 #include <vector>
@@ -48,5 +49,14 @@ struct ClassDefValue {
 };
 
 using ClassDef = PositionWrapper<ClassDefValue>;
+
+template <>
+struct std::formatter<ClassDef> : std::formatter<std::string> {
+    template <typename FormatContext>
+    auto format(const ClassDef& classdef, FormatContext& ctx) const {
+        const auto str = std::format("class {}", classdef.value.class_name);
+        return std::formatter<std::string>::format(str, ctx);
+    }
+};
 
 #endif

@@ -1,10 +1,10 @@
+#include "chava/class.hpp"
 #include "chava/exp.hpp"
 #include "chava/test/test.hpp"
 #include "chava/tokenizer.hpp"
 #include <chava/parser.hpp>
 #include <chava/stmt.hpp>
 #include <chava/test/test_parser.hpp>
-#include <iostream>
 #include <memory>
 
 Test::test_fn_ret test_parse_prim_exp() {
@@ -677,4 +677,214 @@ Test::test_fn_ret test_parse_block_stmt() {
 }
 
 // class
-Test::test_fn_ret test_parse_classdef();
+Test::test_fn_ret test_parse_classdef() {
+    std::vector<std::string> results;
+
+    Test::collect_assert(results, Test::assert_eq(
+        ClassDef{
+            .value=ClassDefValue{
+                .class_name="A",
+                .extend_class_name=std::nullopt,
+                .vardecs=std::vector<PositionWrapper<VardecStmt>>{},
+                .constructor=Constructor{
+                    .value=ConstructorValue{
+                        .params=CommaVardec{
+                            .value=CommaVardecValue{
+                                .vardecs=std::vector<Vardec>{}
+                            },
+                            .pos=Position{.line=1,.col=14}
+                        },
+                        .super_args=std::nullopt,
+                        .stmts=std::vector<Stmt>{},
+                    },
+                    .pos=Position{.line=1,.col=9}
+                },
+                .method_defs=std::vector<MethodDef>{},
+            },
+            .pos=Position{.line=1,.col=1},
+        },
+        Parser::Parse(Tokenizer::Tokenize("class A{init(){}}5;").value())->classdefs.at(0)
+    ));
+    Test::collect_assert(results, Test::assert_eq(
+        ClassDef{
+            .value=ClassDefValue{
+                .class_name="A",
+                .extend_class_name="B",
+                .vardecs=std::vector<PositionWrapper<VardecStmt>>{},
+                .constructor=Constructor{
+                    .value=ConstructorValue{
+                        .params=CommaVardec{
+                            .value=CommaVardecValue{
+                                .vardecs=std::vector<Vardec>{}
+                            },
+                            .pos=Position{.line=1,.col=24}
+                        },
+                        .super_args=std::nullopt,
+                        .stmts=std::vector<Stmt>{},
+                    },
+                    .pos=Position{.line=1,.col=19}
+                },
+                .method_defs=std::vector<MethodDef>{},
+            },
+            .pos=Position{.line=1,.col=1},
+        },
+        Parser::Parse(Tokenizer::Tokenize("class A extends B{init(){}}5;").value())->classdefs.at(0)
+    ));
+    Test::collect_assert(results, Test::assert_eq(
+        ClassDef{
+            .value=ClassDefValue{
+                .class_name="A",
+                .extend_class_name=std::nullopt,
+                .vardecs=std::vector<PositionWrapper<VardecStmt>>{
+                    PositionWrapper<VardecStmt>{
+                        .value=VardecStmt{
+                            .vardec=Vardec{
+                                .value=VardecValue{
+                                    .type=ParsedType{
+                                        .value=ParsedPrimitiveType::Int,
+                                        .pos=Position{.line=1,.col=9},
+                                    },
+                                    .var="x",
+                                },
+                                .pos=Position{.line=1,.col=9},
+                            }
+                        },
+                        .pos=Position{.line=1,.col=9},
+                    },
+                    PositionWrapper<VardecStmt>{
+                        .value=VardecStmt{
+                            .vardec=Vardec{
+                                .value=VardecValue{
+                                    .type=ParsedType{
+                                        .value=ParsedClassType{
+                                            .class_name="String",
+                                        },
+                                        .pos=Position{.line=1,.col=15},
+                                    },
+                                    .var="y",
+                                },
+                                .pos=Position{.line=1,.col=15},
+                            }
+                        },
+                        .pos=Position{.line=1,.col=15},
+                    },
+                },
+                .constructor=Constructor{
+                    .value=ConstructorValue{
+                        .params=CommaVardec{
+                            .value=CommaVardecValue{
+                                .vardecs=std::vector<Vardec>{}
+                            },
+                            .pos=Position{.line=1,.col=29}
+                        },
+                        .super_args=std::nullopt,
+                        .stmts=std::vector<Stmt>{},
+                    },
+                    .pos=Position{.line=1,.col=24}
+                },
+                .method_defs=std::vector<MethodDef>{},
+            },
+            .pos=Position{.line=1,.col=1},
+        },
+        Parser::Parse(Tokenizer::Tokenize("class A{int x;String y;init(){}}5;").value())->classdefs.at(0)
+    ));
+    Test::collect_assert(results, Test::assert_eq(
+        ClassDef{
+            .value=ClassDefValue{
+                .class_name="A",
+                .extend_class_name=std::nullopt,
+                .vardecs=std::vector<PositionWrapper<VardecStmt>>{},
+                .constructor=Constructor{
+                    .value=ConstructorValue{
+                        .params=CommaVardec{
+                            .value=CommaVardecValue{
+                                .vardecs=std::vector<Vardec>{
+                                    Vardec{
+                                        .value=VardecValue{
+                                            .type=ParsedType{
+                                                .value=ParsedPrimitiveType::Int,
+                                                .pos=Position{.line=1,.col=14},
+                                            },
+                                            .var="x",
+                                        },
+                                        .pos=Position{.line=1,.col=14},
+                                    },
+                                    Vardec{
+                                        .value=VardecValue{
+                                            .type=ParsedType{
+                                                .value=ParsedClassType{
+                                                    .class_name="String",
+                                                },
+                                                .pos=Position{.line=1,.col=20},
+                                            },
+                                            .var="y",
+                                        },
+                                        .pos=Position{.line=1,.col=20},
+                                    }
+                                }
+                            },
+                            .pos=Position{.line=1,.col=20}
+                        },
+                        .super_args=std::nullopt,
+                        .stmts=std::vector<Stmt>{},
+                    },
+                    .pos=Position{.line=1,.col=9}
+                },
+                .method_defs=std::vector<MethodDef>{},
+            },
+            .pos=Position{.line=1,.col=1},
+        },
+        Parser::Parse(Tokenizer::Tokenize("class A{init(int x,String y){}}5;").value())->classdefs.at(0)
+    ));
+    // RESUME HERE
+    Test::collect_assert(results, Test::assert_eq(
+        ClassDef{
+            .value=ClassDefValue{
+                .class_name="A",
+                .extend_class_name=std::nullopt,
+                .vardecs=std::vector<PositionWrapper<VardecStmt>>{},
+                .constructor=Constructor{
+                    .value=ConstructorValue{
+                        .params=CommaVardec{
+                            .value=CommaVardecValue{
+                                .vardecs=std::vector<Vardec>{}
+                            },
+                            .pos=Position{.line=1,.col=14}
+                        },
+                        .super_args=std::nullopt,
+                        .stmts=std::vector<Stmt>{},
+                    },
+                    .pos=Position{.line=1,.col=9}
+                },
+                .method_defs=std::vector<MethodDef>{
+                    MethodDef{
+                        .value=MethodDefValue{
+                            .method_name="a",
+                            .params=CommaVardec{
+                                .value=CommaVardecValue{
+                                    .vardecs=std::vector<Vardec>{},
+                                },
+                                .pos=Position{.line=1,.col=26},
+                            },
+                            .ret_type=ParsedType{
+                                .value=ParsedPrimitiveType::Void,
+                                .pos=Position{.line=1,.col=27},
+                            },
+                            .body=PositionWrapper<std::shared_ptr<BlockStmt>>{
+                                .value=std::make_shared<BlockStmt>(BlockStmt{
+                                    .stmts=std::vector<Stmt>{},
+                                }),
+                                .pos=Position{.line=1,.col=31},
+                            }
+                        },
+                        .pos=Position{.line=1,.col=17},
+                    }
+                },
+            },
+            .pos=Position{.line=1,.col=1},
+        },
+        Parser::Parse(Tokenizer::Tokenize("class A{init(){}method a()void{}}5;").value())->classdefs.at(0)
+    ));
+
+    return Test::get_result_ret(results);
+}

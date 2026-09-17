@@ -7,10 +7,16 @@ std::expected<CommaVardec, std::string> Parser::parse_comma_vardec() {
 
     auto vardec = parse_vardec();
     if(!vardec) {
+        const auto token = get_token();
+        if(!token) {
+            return std::unexpected(token.error());
+        }
+
         return CommaVardec{
             .value=CommaVardecValue{
                 .vardecs=std::move(vardecs),
-            }
+            },
+            .pos=token->pos,
         };
     }
 

@@ -36,5 +36,8 @@ int main() {
         Test::run_test(test_parse_return_stmt, "return statement parsing"),
         Test::run_test(test_parse_if_stmt, "if statement parsing"),
         Test::run_test(test_parse_block_stmt, "block statement parsing"),
+
+        // classdefs
+        Test::run_test(test_parse_classdef, "class definition parsing"),
     }) << std::endl;
 }
